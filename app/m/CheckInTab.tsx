@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { Machine, Site } from '@/lib/types';
 import { useGeolocation } from '@/lib/use-geolocation';
 import { haversineKm, formatKm } from '@/lib/geo';
+import { useCheckIn, useElapsed } from '@/lib/use-check-in';
 import { MachineSheet, type SheetSnap } from './MachineSheet';
 import { MachineHome } from './MachineHome';
 
@@ -27,8 +28,24 @@ export function CheckInTab({
   sites: Site[];
 }) {
   const geo = useGeolocation();
+  const { state: checkInState, checkOut } = useCheckIn();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [snap, setSnap] = useState<SheetSnap>('closed');
+
+  // When the user checks in to the currently selected machine, auto-expand
+  // the sheet so the pinned check-out + scrollable details are immediately
+  // useful. We only fire on the transition, not every render.
+  useEffect(() => {
+    if (
+      checkInState &&
+      selectedId &&
+      checkInState.machineId === selectedId &&
+      snap !== 'expanded'
+    ) {
+      setSnap('expanded');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkInState?.machineId, selectedId]);
 
   const siteName = useMemo(
     () => Object.fromEntries(sites.map((s) => [s.id, s.name])),
@@ -125,7 +142,18 @@ export function CheckInTab({
       </div>
 
       {/* Bottom sheet */}
-      <MachineSheet snap={snap} onSnapChange={setSnap}>
+      <MachineSheet
+        snap={snap}
+        onSnapChange={setSnap}
+        footer={
+          selected && checkInState?.machineId === selected.machine.id ? (
+            <SheetCheckOutFooter
+              startedAt={checkInState.startedAt}
+              onCheckOut={checkOut}
+            />
+          ) : null
+        }
+      >
         {selected ? (
           <MachineHome
             machine={selected.machine}
@@ -141,5 +169,43 @@ export function CheckInTab({
         )}
       </MachineSheet>
     </>
+  );
+}
+
+/** Renders pinned at the bottom of the sheet whenever the user is checked
+ *  in to the currently-displayed machine. The machine home above stays
+ *  scrollable so the operator can browse issues, telematics, inspections. */
+function SheetCheckOutFooter({
+  startedAt,
+  onCheckOut,
+}: {
+  startedAt: string;
+  onCheckOut: () => void;
+}) {
+  const elapsed = useElapsed(startedAt);
+  return (
+    <div className="px-4 py-3 flex items-center gap-3">
+      <div className="flex items-center gap-2 min-w-0 flex-1">
+        <span className="relative inline-flex h-2.5 w-2.5">
+          <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
+          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+        </span>
+        <div className="min-w-0">
+          <div className="text-[10px] uppercase tracking-wide text-slate-500 font-semibold">
+            Session
+          </div>
+          <div className="font-mono text-sm tabular-nums font-semibold text-slate-900">
+            {elapsed}
+          </div>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onCheckOut}
+        className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:bg-rose-700 text-white text-sm font-semibold"
+      >
+        Check out
+      </button>
+    </div>
   );
 }

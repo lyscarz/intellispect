@@ -20,7 +20,7 @@ export function MachineHome({
   distanceLabel: string | null;
   siteName: string | null;
 }) {
-  const { state, checkIn, checkOut } = useCheckIn();
+  const { state, checkIn } = useCheckIn();
   const isCheckedInHere = state?.machineId === machine.id;
   const snap = machine.lastSnapshot;
   const imageUrl = snap?.imageUrl ?? null;
@@ -49,15 +49,23 @@ export function MachineHome({
         {snap?.attention && <AlertsBadge attention={snap.attention} size="sm" />}
       </div>
 
-      {/* Check-in / Check-out */}
+      {/* Check-in / session info. When the operator IS checked in to THIS
+          machine, the sheet's pinned footer (rendered by CheckInTab) handles
+          Check out — here we just show context (started at + a hint to scroll). */}
       {isCheckedInHere ? (
-        <button
-          type="button"
-          onClick={checkOut}
-          className="w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold"
-        >
-          Check out
-        </button>
+        <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2.5 text-sm text-emerald-900">
+          <div className="flex items-center gap-2 font-semibold">
+            <span className="relative inline-flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+            Checked in
+          </div>
+          <div className="text-xs text-emerald-800 mt-1">
+            Started {formatStartedAt(state?.startedAt ?? null)}. Browse below — Check out
+            stays pinned at the bottom of the sheet.
+          </div>
+        </div>
       ) : state ? (
         <div className="space-y-2">
           <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
@@ -75,10 +83,8 @@ export function MachineHome({
       ) : (
         <button
           type="button"
-          onClick={() =>
-            checkIn({ machineId: machine.id, machineName: machine.name })
-          }
-          className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold"
+          onClick={() => checkIn({ machineId: machine.id, machineName: machine.name })}
+          className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-700 text-white text-sm font-semibold"
         >
           Check in
         </button>
@@ -127,6 +133,15 @@ export function MachineHome({
       )}
     </div>
   );
+}
+
+function formatStartedAt(iso: string | null): string {
+  if (!iso) return 'just now';
+  const d = new Date(iso);
+  const diffMs = Date.now() - d.getTime();
+  if (diffMs < 60_000) return 'just now';
+  // Show as "10:14 AM" — locale-aware, no seconds.
+  return `at ${d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
 }
 
 function Thumb({ machine, imageUrl }: { machine: Machine; imageUrl: string | null }) {
