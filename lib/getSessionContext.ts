@@ -9,6 +9,16 @@ export type SessionContext = {
   accountId: string;
   accountName: string;
   role: 'account_admin' | 'admin_user' | 'operator';
+  /** Every account this user is a member of. Powers the account switcher. */
+  memberships: Array<{
+    accountId: string;
+    accountName: string;
+    role: 'account_admin' | 'admin_user' | 'operator';
+  }>;
+  /** Fleet-scope rule for queries against the active account:
+   *    null     → unrestricted (account_admin)
+   *    string[] → only these fleet IDs (may be empty = no access). */
+  allowedFleetIds: string[] | null;
 };
 
 const ACTIVE_ACCOUNT_COOKIE = 'active_account_id';
@@ -99,12 +109,36 @@ export async function getSessionContext(): Promise<SessionContext> {
   }
 
   const accountRow = Array.isArray(active.accounts) ? active.accounts[0] : active.accounts;
+  const role = active.role as SessionContext['role'];
+
+  // Full membership list — powers the account switcher.
+  const membershipList: SessionContext['memberships'] = (memberships ?? []).map((m) => {
+    const row = Array.isArray(m.accounts) ? m.accounts[0] : m.accounts;
+    return {
+      accountId: m.account_id as string,
+      accountName: (row?.name as string) ?? 'Account',
+      role: m.role as SessionContext['role'],
+    };
+  });
+
+  // Fleet scope for the active account. account_admin = unrestricted.
+  let allowedFleetIds: string[] | null = null;
+  if (role !== 'account_admin') {
+    const { data: grants } = await admin
+      .from('member_fleet_access')
+      .select('fleet_id')
+      .eq('account_id', active.account_id)
+      .eq('user_id', user.id);
+    allowedFleetIds = (grants ?? []).map((g) => (g as { fleet_id: string }).fleet_id);
+  }
 
   return {
     userId: user.id,
     email: user.email ?? '',
     accountId: active.account_id,
     accountName: (accountRow?.name as string) ?? 'My account',
-    role: active.role as SessionContext['role'],
+    role,
+    memberships: membershipList,
+    allowedFleetIds,
   };
 }

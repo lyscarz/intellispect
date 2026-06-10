@@ -54,7 +54,12 @@ export async function getSiteByTrackunitId(
   return data ? rowToSite(data as SiteRow) : null;
 }
 
-export async function listSitesForFleet(accountId: string, fleetId: string): Promise<Site[]> {
+export async function listSitesForFleet(
+  accountId: string,
+  fleetId: string,
+  allowedFleetIds: string[] | null = null
+): Promise<Site[]> {
+  if (allowedFleetIds !== null && !allowedFleetIds.includes(fleetId)) return [];
   const supabase = createSupabaseServerClient();
   const { data, error } = await supabase
     .from('sites')
@@ -66,13 +71,21 @@ export async function listSitesForFleet(accountId: string, fleetId: string): Pro
   return (data ?? []).map((r) => rowToSite(r as SiteRow));
 }
 
-export async function listSitesForAccount(accountId: string): Promise<Site[]> {
+export async function listSitesForAccount(
+  accountId: string,
+  allowedFleetIds: string[] | null = null
+): Promise<Site[]> {
   const supabase = createSupabaseServerClient();
-  const { data, error } = await supabase
+  let q = supabase
     .from('sites')
     .select('*')
     .eq('account_id', accountId)
     .order('name', { ascending: true });
+  if (allowedFleetIds !== null) {
+    if (allowedFleetIds.length === 0) return [];
+    q = q.in('fleet_id', allowedFleetIds);
+  }
+  const { data, error } = await q;
   if (error) throw new Error(`Failed to list sites: ${error.message}`);
   return (data ?? []).map((r) => rowToSite(r as SiteRow));
 }

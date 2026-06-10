@@ -224,6 +224,8 @@ export interface ListResponsesFilters {
   /** ISO timestamp — only responses submitted at or after this point. */
   since?: string;
   limit?: number;
+  /** Fleet-scope filter. null/undefined = unrestricted; [] = none. */
+  allowedFleetIds?: string[] | null;
 }
 
 export async function listResponses(
@@ -231,11 +233,27 @@ export async function listResponses(
   filters: ListResponsesFilters = {}
 ): Promise<InspectionResponse[]> {
   const supabase = createSupabaseServerClient();
+
+  // Resolve fleet scope to a machine-id whitelist first.
+  let scopedMachineIds: string[] | null = null;
+  if (filters.allowedFleetIds != null) {
+    if (filters.allowedFleetIds.length === 0) return [];
+    const { data: ms, error: msErr } = await supabase
+      .from('machines')
+      .select('id')
+      .eq('account_id', accountId)
+      .in('fleet_id', filters.allowedFleetIds);
+    if (msErr) throw new Error(`Failed to resolve scoped machines: ${msErr.message}`);
+    scopedMachineIds = (ms ?? []).map((m) => (m as { id: string }).id);
+    if (scopedMachineIds.length === 0) return [];
+  }
+
   let q = supabase
     .from('inspection_responses')
     .select('*')
     .eq('account_id', accountId)
     .order('submitted_at', { ascending: false });
+  if (scopedMachineIds) q = q.in('machine_id', scopedMachineIds);
   if (filters.templateId) q = q.eq('template_id', filters.templateId);
   if (filters.machineId) q = q.eq('machine_id', filters.machineId);
   if (filters.siteId) q = q.eq('site_id', filters.siteId);

@@ -45,13 +45,25 @@ function rowToMachine(r: MachineRow): Machine {
   };
 }
 
-export async function listMachinesForAccount(accountId: string): Promise<Machine[]> {
+/** Lists machines in the account. When `allowedFleetIds` is null the caller
+ *  is unrestricted (account_admin); when it's an array we filter to those
+ *  fleet IDs only. Machines unassigned to any fleet (fleet_id is null) are
+ *  hidden from scoped users. */
+export async function listMachinesForAccount(
+  accountId: string,
+  allowedFleetIds: string[] | null = null
+): Promise<Machine[]> {
   const supabase = createSupabaseServerClient();
-  const { data, error } = await supabase
+  let q = supabase
     .from('machines')
     .select('*')
     .eq('account_id', accountId)
     .order('created_at', { ascending: false });
+  if (allowedFleetIds !== null) {
+    if (allowedFleetIds.length === 0) return [];
+    q = q.in('fleet_id', allowedFleetIds);
+  }
+  const { data, error } = await q;
   if (error) throw new Error(`Failed to list machines: ${error.message}`);
   return (data ?? []).map((r) => rowToMachine(r as MachineRow));
 }

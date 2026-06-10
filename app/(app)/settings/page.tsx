@@ -46,9 +46,41 @@ export default async function SettingsPage() {
           </div>
         </Link>
 
-        <div className="rounded-xl ring-1 ring-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">
-          <span className="font-medium text-slate-700">Team members & invites</span> — coming soon.
-        </div>
+        {ctx.role === 'account_admin' && (
+          <Link
+            href="/settings/users"
+            className="block rounded-xl ring-1 ring-slate-200 bg-white px-4 py-4 hover:bg-slate-50"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-medium text-slate-900">Users</h3>
+                <p className="text-sm text-slate-500 mt-0.5">
+                  Invite admins and operators, manage roles, and scope access by fleet.
+                </p>
+              </div>
+              <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </Link>
+        )}
+
+        <Link
+          href="/settings/accounts"
+          className="block rounded-xl ring-1 ring-slate-200 bg-white px-4 py-4 hover:bg-slate-50"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-medium text-slate-900">Your accounts</h3>
+              <p className="text-sm text-slate-500 mt-0.5">
+                Switch between accounts you belong to, or create a new one.
+              </p>
+            </div>
+            <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </Link>
       </div>
 
       <h2 className="mt-10 text-sm font-semibold text-slate-900 uppercase tracking-wide">Admin</h2>

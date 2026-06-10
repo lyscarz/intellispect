@@ -1,12 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // ?next=/some/path lets callers (e.g. /accept-invite) bounce back here for
+  // sign-in and return automatically. We only honour same-origin paths.
+  const nextParam = searchParams.get('next');
+  const nextPath = nextParam && nextParam.startsWith('/') ? nextParam : '/fleet';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -23,7 +28,7 @@ export default function LoginPage() {
       setSubmitting(false);
       return;
     }
-    router.push('/fleet');
+    router.push(nextPath);
     router.refresh();
   }
 

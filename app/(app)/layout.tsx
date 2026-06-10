@@ -12,7 +12,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const ctx = await getSessionContext();
   return (
     <AppShell
-      user={{ email: ctx.email, role: ctx.role, accountName: ctx.accountName }}
+      user={{
+        email: ctx.email,
+        role: ctx.role,
+        accountId: ctx.accountId,
+        accountName: ctx.accountName,
+        memberships: ctx.memberships,
+      }}
     >
       {children}
     </AppShell>

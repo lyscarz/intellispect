@@ -212,6 +212,10 @@ export interface ListRunsFilters {
   outcome?: Outcome;
   since?: string;
   limit?: number;
+  /** Fleet-scope filter (from getSessionContext.allowedFleetIds).
+   *    undefined / null → unrestricted
+   *    string[]         → only runs on machines whose fleet_id is in this set */
+  allowedFleetIds?: string[] | null;
 }
 
 /** Pulls intent runs with optional filters. Mirrors listResponses shape. */
@@ -220,6 +224,21 @@ export async function listIntentRuns(
   filters: ListRunsFilters = {}
 ): Promise<IntentRun[]> {
   const supabase = createSupabaseServerClient();
+
+  // Resolve fleet scope to a machine-id whitelist, if scoped.
+  let scopedMachineIds: string[] | null = null;
+  if (filters.allowedFleetIds != null) {
+    if (filters.allowedFleetIds.length === 0) return [];
+    const { data: ms, error: msErr } = await supabase
+      .from('machines')
+      .select('id')
+      .eq('account_id', accountId)
+      .in('fleet_id', filters.allowedFleetIds);
+    if (msErr) throw new Error(`Failed to resolve scoped machines: ${msErr.message}`);
+    scopedMachineIds = (ms ?? []).map((m) => (m as { id: string }).id);
+    if (scopedMachineIds.length === 0) return [];
+  }
+
   let q = supabase
     .from('inspection_intent_runs')
     .select('*')
@@ -229,6 +248,7 @@ export async function listIntentRuns(
   if (filters.templateId) q = q.eq('template_id', filters.templateId);
   if (filters.outcome) q = q.eq('outcome', filters.outcome);
   if (filters.since) q = q.gte('started_at', filters.since);
+  if (scopedMachineIds) q = q.in('machine_id', scopedMachineIds);
   if (filters.limit) q = q.limit(filters.limit);
   const { data, error } = await q;
   if (error) throw new Error(`Failed to list intent runs: ${error.message}`);
@@ -258,6 +278,8 @@ export async function listIntentRuns(
 
 export interface ListAllRunsFilters extends ListRunsFilters {
   kind?: 'form' | 'intent';
+  /** Internal: resolved machine-id whitelist when caller is fleet-scoped. */
+  machineIdsScope?: string[];
 }
 
 /** Returns the unified run list across both inspection_responses and
@@ -273,12 +295,29 @@ export async function listAllRuns(
   const wantIntent = filters.kind !== 'form';
   const limit = filters.limit ?? 100;
 
+  // Pre-resolve which machine IDs are in scope when the caller is fleet-scoped.
+  let scopedMachineIds: string[] | null = null;
+  if (filters.allowedFleetIds != null) {
+    if (filters.allowedFleetIds.length === 0) return [];
+    const { data: ms, error: msErr } = await supabase
+      .from('machines')
+      .select('id')
+      .eq('account_id', accountId)
+      .in('fleet_id', filters.allowedFleetIds);
+    if (msErr) throw new Error(`Failed to resolve scoped machines: ${msErr.message}`);
+    scopedMachineIds = (ms ?? []).map((m) => (m as { id: string }).id);
+    if (scopedMachineIds.length === 0) return [];
+  }
+  const effectiveFilters: ListAllRunsFilters = scopedMachineIds
+    ? { ...filters, allowedFleetIds: null, machineIdsScope: scopedMachineIds } as ListAllRunsFilters
+    : filters;
+
   const [formRes, intentRes] = await Promise.all([
     wantForm
-      ? buildFormListQuery(supabase, accountId, filters, limit)
+      ? buildFormListQuery(supabase, accountId, effectiveFilters, limit)
       : Promise.resolve({ data: [], error: null } as { data: unknown[]; error: null }),
     wantIntent
-      ? buildIntentListQuery(supabase, accountId, filters, limit)
+      ? buildIntentListQuery(supabase, accountId, effectiveFilters, limit)
       : Promise.resolve({ data: [], error: null } as { data: unknown[]; error: null }),
   ]);
   if ((formRes as { error: unknown }).error)
@@ -421,6 +460,7 @@ function buildFormListQuery(
   if (filters.templateId) q = q.eq('template_id', filters.templateId);
   if (filters.outcome) q = q.eq('outcome', filters.outcome);
   if (filters.since) q = q.gte('started_at', filters.since);
+  if (filters.machineIdsScope) q = q.in('machine_id', filters.machineIdsScope);
   return q;
 }
 
@@ -442,5 +482,6 @@ function buildIntentListQuery(
   if (filters.templateId) q = q.eq('template_id', filters.templateId);
   if (filters.outcome) q = q.eq('outcome', filters.outcome);
   if (filters.since) q = q.gte('started_at', filters.since);
+  if (filters.machineIdsScope) q = q.in('machine_id', filters.machineIdsScope);
   return q;
 }
