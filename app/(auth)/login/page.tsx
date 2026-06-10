@@ -1,11 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser';
 
 export default function LoginPage() {
+  // useSearchParams() forces the page out of static rendering; Next.js requires
+  // that consumers be wrapped in a Suspense boundary so the rest of the tree
+  // can still prerender. The form lives inside <LoginForm/>.
+  return (
+    <Suspense fallback={<LoginFormFallback />}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   // ?next=/some/path lets callers (e.g. /accept-invite) bounce back here for
@@ -82,6 +93,22 @@ export default function LoginPage() {
           Sign up
         </Link>
       </p>
+    </div>
+  );
+}
+
+/** Skeleton shown while the search-params hook hydrates. Same visual shape as
+ *  the real form so layout doesn't jump. */
+function LoginFormFallback() {
+  return (
+    <div className="bg-white rounded-xl ring-1 ring-slate-200 p-6 shadow-sm">
+      <h1 className="text-xl font-semibold text-slate-900">Log in</h1>
+      <p className="mt-1 text-sm text-slate-500">Welcome back to IntelliCheck.</p>
+      <div className="mt-6 space-y-4">
+        <div className="h-8 rounded bg-slate-100 animate-pulse" />
+        <div className="h-8 rounded bg-slate-100 animate-pulse" />
+        <div className="h-9 rounded bg-slate-100 animate-pulse" />
+      </div>
     </div>
   );
 }
