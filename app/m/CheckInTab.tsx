@@ -78,7 +78,13 @@ export function CheckInTab({
 
   return (
     <>
-      <div className="relative w-full" style={{ height: 'calc(100vh - 110px)' }}>
+      {/* isolation:isolate gives the map its own stacking context so Leaflet's
+          internal z-indexes (attribution at z-800, controls at z-1000, etc.)
+          stay scoped here and don't bleed above the bottom sheet (z-50). */}
+      <div
+        className="relative w-full"
+        style={{ height: 'calc(100vh - 110px)', isolation: 'isolate' }}
+      >
         {/* Top status strip */}
         <div className="absolute top-2 left-2 right-2 z-10 flex items-center justify-between">
           <div className="rounded-full bg-white/95 backdrop-blur px-3 py-1.5 text-xs font-semibold text-slate-700 shadow">

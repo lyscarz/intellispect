@@ -92,7 +92,10 @@ export function MobileFleetMap({ machines, userPosition }: Props) {
     (userPosition ? [userPosition.lat, userPosition.lng] : [0, 0]);
 
   return (
-    <div className="h-[60vh] rounded-2xl overflow-hidden border border-slate-200">
+    <div
+      className="h-[60vh] rounded-2xl overflow-hidden border border-slate-200"
+      style={{ isolation: 'isolate' }}
+    >
       <MapContainer
         center={initialCenter}
         zoom={10}
