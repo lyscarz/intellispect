@@ -17,11 +17,11 @@ export default async function FleetPage({
 }) {
   const ctx = await getSessionContext();
   const [machines, connection, fleets, fleetCounts, sites] = await Promise.all([
-    listMachinesForAccount(ctx.accountId),
+    listMachinesForAccount(ctx.accountId, ctx.allowedFleetIds),
     getActiveConnection(ctx.accountId, 'trackunit'),
     listFleetsForAccount(ctx.accountId),
     countMachinesByFleet(ctx.accountId),
-    listSitesForAccount(ctx.accountId),
+    listSitesForAccount(ctx.accountId, ctx.allowedFleetIds),
   ]);
   const sitesById: Record<string, string> = Object.fromEntries(sites.map((s) => [s.id, s.name]));
 

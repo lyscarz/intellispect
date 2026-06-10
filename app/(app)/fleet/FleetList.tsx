@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -184,6 +184,25 @@ export function FleetList({
     });
   }
 
+  // Single-machine variants used by the row-level "Reassign…" popover. Same
+  // backend as the bulk versions — just an array of one.
+  function reassignOne(machineId: string, patch: { fleetId?: string | null; siteId?: string | null }) {
+    setError(null);
+    startTransition(async () => {
+      try {
+        if (patch.fleetId !== undefined) {
+          await bulkAssignToFleetAction([machineId], patch.fleetId);
+        }
+        if (patch.siteId !== undefined) {
+          await bulkAssignToSiteAction([machineId], patch.siteId);
+        }
+        router.refresh();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Reassign failed');
+      }
+    });
+  }
+
   const allVisibleSelected = visible.length > 0 && selected.size === visible.length;
   const someSelected = selected.size > 0 && !allVisibleSelected;
 
@@ -208,17 +227,33 @@ export function FleetList({
         </span>
       </div>
 
-      {/* Bulk bar */}
-      {selected.size > 0 && (
-        <div className="mb-3 flex items-center justify-between gap-2 rounded-lg ring-1 ring-slate-200 bg-white px-4 py-2.5">
-          <span className="text-sm text-slate-700">
-            <span className="font-medium">{selected.size}</span> selected
+      {/* Bulk bar — always visible when there are machines; disabled when nothing selected. */}
+      {rows.length > 0 && (
+        <div
+          className={`mb-3 flex items-center justify-between gap-2 rounded-lg ring-1 px-4 py-2.5 transition ${
+            selected.size > 0
+              ? 'bg-white ring-slate-200'
+              : 'bg-slate-50/60 ring-slate-200/70'
+          }`}
+        >
+          <span
+            className={`text-sm ${
+              selected.size > 0 ? 'text-slate-700' : 'text-slate-500'
+            }`}
+          >
+            {selected.size > 0 ? (
+              <>
+                <span className="font-medium">{selected.size}</span> selected
+              </>
+            ) : (
+              <>Tick machines below to bulk-move them to another fleet or site.</>
+            )}
           </span>
           <div className="flex items-center gap-2">
             {fleets.length > 0 && (
               <BulkMenu
                 placeholder="Move to fleet…"
-                disabled={pending}
+                disabled={pending || selected.size === 0}
                 options={[
                   { value: '__null', label: 'Unassign' },
                   ...fleets.map((f) => ({ value: f.id, label: f.name })),
@@ -226,36 +261,41 @@ export function FleetList({
                 onPick={(v) => handleBulkMoveFleet(v === '__null' ? null : v)}
               />
             )}
-            {sharedFleetId !== null && (
-              <BulkMenu
-                placeholder={
-                  sitesForSelection.length === 0 ? 'No sites in fleet' : 'Assign site…'
-                }
-                disabled={pending || sitesForSelection.length === 0}
-                options={[
-                  { value: '__null', label: 'Clear site' },
-                  ...sitesForSelection.map((s) => ({ value: s.id, label: s.name })),
-                ]}
-                onPick={(v) => handleBulkAssignSite(v === '__null' ? null : v)}
-              />
-            )}
-            {sharedFleetId === null && selected.size > 1 && (
-              <span className="text-xs text-slate-400">
-                Mixed fleets — assign site one at a time
-              </span>
-            )}
+            <BulkMenu
+              placeholder={
+                selected.size === 0
+                  ? 'Assign site…'
+                  : sharedFleetId === null
+                    ? 'Mixed fleets'
+                    : sitesForSelection.length === 0
+                      ? 'No sites in fleet'
+                      : 'Assign site…'
+              }
+              disabled={
+                pending ||
+                selected.size === 0 ||
+                sharedFleetId === null ||
+                sitesForSelection.length === 0
+              }
+              options={[
+                { value: '__null', label: 'Clear site' },
+                ...sitesForSelection.map((s) => ({ value: s.id, label: s.name })),
+              ]}
+              onPick={(v) => handleBulkAssignSite(v === '__null' ? null : v)}
+            />
             <button
               type="button"
               onClick={() => setSelected(new Set())}
-              className="text-sm text-slate-500 hover:text-slate-700 px-2 py-1"
+              disabled={selected.size === 0}
+              className="text-sm text-slate-500 hover:text-slate-700 px-2 py-1 disabled:opacity-40 disabled:hover:text-slate-500"
             >
               Clear
             </button>
             <button
               type="button"
               onClick={handleBulkDisconnect}
-              disabled={pending}
-              className="rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-medium px-3 py-1.5"
+              disabled={pending || selected.size === 0}
+              className="rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:hover:bg-red-600 text-white text-sm font-medium px-3 py-1.5"
             >
               {pending ? 'Working…' : 'Disconnect'}
             </button>
@@ -359,10 +399,14 @@ export function FleetList({
                     <td className="px-2 py-3 whitespace-nowrap">
                       <SourcePill source={machine.source} disconnected={isDisconnected} />
                     </td>
-                    <td className="px-4 py-3 text-slate-300">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
+                    <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                      <RowReassignButton
+                        machine={machine}
+                        fleets={fleets}
+                        sites={sites}
+                        disabled={pending}
+                        onReassign={(patch) => reassignOne(machine.id, patch)}
+                      />
                     </td>
                   </tr>
                 );
@@ -455,6 +499,166 @@ function Thumb({ machine, imageUrl }: { machine: Machine; imageUrl: string | nul
   return (
     <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${bg}`}>
       <span className={`text-xs font-bold ${fg}`}>{initials}</span>
+    </div>
+  );
+}
+
+/** Row-level "Reassign…" popover. Opens a tiny panel anchored under the
+ *  button with Fleet + Site dropdowns. Submits via the parent-supplied
+ *  onReassign callback (same backend as the bulk bar). */
+function RowReassignButton({
+  machine,
+  fleets,
+  sites,
+  disabled,
+  onReassign,
+}: {
+  machine: Machine;
+  fleets: Fleet[];
+  sites: Site[];
+  disabled?: boolean;
+  onReassign: (patch: { fleetId?: string | null; siteId?: string | null }) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [fleetId, setFleetId] = useState<string | null>(machine.fleetId);
+  const [siteId, setSiteId] = useState<string | null>(machine.siteId);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onClick(e: MouseEvent) {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    window.addEventListener('mousedown', onClick);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('mousedown', onClick);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  // Reset local state every time the popover opens so it reflects current row.
+  useEffect(() => {
+    if (open) {
+      setFleetId(machine.fleetId);
+      setSiteId(machine.siteId);
+    }
+  }, [open, machine.fleetId, machine.siteId]);
+
+  const sitesForFleet = fleetId ? sites.filter((s) => s.fleetId === fleetId) : [];
+
+  function submit() {
+    const fleetChanged = fleetId !== machine.fleetId;
+    const siteChanged = siteId !== machine.siteId;
+    if (!fleetChanged && !siteChanged) {
+      setOpen(false);
+      return;
+    }
+    // When fleet changes, updateMachine auto-clears site server-side, so we
+    // don't need to send both — but if the user explicitly chose a new site
+    // (in the new fleet), send that after.
+    if (fleetChanged) {
+      onReassign({ fleetId });
+      if (siteId && fleetId && sites.some((s) => s.id === siteId && s.fleetId === fleetId)) {
+        // valid site in the new fleet — assign it
+        onReassign({ siteId });
+      }
+    } else if (siteChanged) {
+      onReassign({ siteId });
+    }
+    setOpen(false);
+  }
+
+  return (
+    <div ref={rootRef} className="relative inline-block">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((o) => !o);
+        }}
+        disabled={disabled}
+        className="text-xs font-medium text-slate-600 hover:text-brand-700 disabled:opacity-50 px-2 py-1 rounded-md hover:bg-slate-100"
+      >
+        Reassign…
+      </button>
+      {open && (
+        <div
+          className="absolute right-0 mt-1 z-40 w-64 rounded-lg ring-1 ring-slate-200 bg-white shadow-lg p-3 text-left"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="text-[10px] uppercase tracking-wide text-slate-500 font-semibold">
+            Move {machine.name}
+          </div>
+          <label className="block mt-2">
+            <span className="block text-[11px] text-slate-500 mb-0.5">Fleet</span>
+            <select
+              value={fleetId ?? '__null'}
+              onChange={(e) => {
+                const v = e.target.value;
+                const next = v === '__null' ? null : v;
+                setFleetId(next);
+                // If the current site is in a different fleet, clear it.
+                if (next === null || !sites.some((s) => s.id === siteId && s.fleetId === next)) {
+                  setSiteId(null);
+                }
+              }}
+              className="w-full text-sm rounded-md border border-slate-300 px-2 py-1"
+            >
+              <option value="__null">Unassigned</option>
+              {fleets.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block mt-2">
+            <span className="block text-[11px] text-slate-500 mb-0.5">Site</span>
+            <select
+              value={siteId ?? '__null'}
+              onChange={(e) => {
+                const v = e.target.value;
+                setSiteId(v === '__null' ? null : v);
+              }}
+              disabled={!fleetId || sitesForFleet.length === 0}
+              className="w-full text-sm rounded-md border border-slate-300 px-2 py-1 disabled:opacity-50"
+            >
+              <option value="__null">
+                {fleetId === null
+                  ? '(no fleet)'
+                  : sitesForFleet.length === 0
+                    ? 'No sites in fleet'
+                    : 'No site'}
+              </option>
+              {sitesForFleet.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="mt-3 flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="text-xs text-slate-500 hover:text-slate-700"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={submit}
+              className="px-2.5 py-1 rounded-md bg-brand-600 text-white text-xs font-semibold hover:bg-brand-700"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

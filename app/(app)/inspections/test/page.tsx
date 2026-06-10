@@ -9,14 +9,14 @@ export const dynamic = 'force-dynamic';
 export default async function InspectionsTestPage() {
   const ctx = await getSessionContext();
   const [machines, sites] = await Promise.all([
-    listMachinesForAccount(ctx.accountId),
-    listSitesForAccount(ctx.accountId),
+    listMachinesForAccount(ctx.accountId, ctx.allowedFleetIds),
+    listSitesForAccount(ctx.accountId, ctx.allowedFleetIds),
   ]);
 
   return (
     <div className="flex flex-col gap-4 h-full">
       <div className="flex items-center gap-3 text-sm">
-        <Link href="/inspections" className="text-slate-500 hover:text-slate-900 inline-flex items-center gap-1">
+        <Link href="/inspection-history" className="text-slate-500 hover:text-slate-900 inline-flex items-center gap-1">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>

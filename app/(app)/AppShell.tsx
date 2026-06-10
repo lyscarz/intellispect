@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { AccountSwitcher } from './AccountSwitcher';
 
 /**
  * App shell: persistent left sidebar (nav) + top bar (page title + account
@@ -67,16 +68,18 @@ interface NavItem {
 }
 
 // Top section of the sidebar — primary navigation.
+// "Inspections" is the single entry point; the template builder is reached
+// from a CTA on that page (see /inspection-history) rather than the sidebar.
 const NAV: NavItem[] = [
   { label: 'Inventory', href: '/fleet', match: /^\/fleet(\/|$)/, icon: InventoryIcon },
   { label: 'Sites', href: '/sites', match: /^\/sites(\/|$)/, icon: SiteIcon },
   { label: 'Inspections', href: '/inspection-history', match: /^\/inspection-history(\/|$)/, icon: InspectionHistoryIcon },
-  { label: 'Inspection builder', href: '/inspections', match: /^\/inspections(\/|$)/, icon: InspectionIcon },
 ];
 
-// Routes hidden from the `operator` role. The matching layouts/middleware
-// enforce access — this just keeps the nav clean.
-const ADMIN_ONLY_HREFS = new Set(['/inspections']);
+// Routes hidden from the `operator` role. Empty for now — the only entries
+// here once were admin-only, but the routes they pointed at have been moved
+// behind CTAs on shared pages.
+const ADMIN_ONLY_HREFS = new Set<string>();
 
 // Pushed to the bottom of the nav area, above the user footer.
 const SETTINGS_NAV: NavItem[] = [
@@ -101,7 +104,17 @@ export function AppShell({
   user,
   children,
 }: {
-  user: { email: string; role: string; accountName: string };
+  user: {
+    email: string;
+    role: string;
+    accountId: string;
+    accountName: string;
+    memberships: Array<{
+      accountId: string;
+      accountName: string;
+      role: 'account_admin' | 'admin_user' | 'operator';
+    }>;
+  };
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -237,27 +250,15 @@ export function AppShell({
           >
             <HamburgerIcon className="w-5 h-5" />
           </button>
-          {/* spacer pushes account chip + email to the right */}
+          {/* spacer pushes account switcher + email to the right */}
           <div className="flex-1" />
-          <span
-            className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 max-w-[12rem] truncate"
-            title={user.accountName}
-          >
-            <svg
-              className="w-3.5 h-3.5 text-slate-400 flex-shrink-0"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5m14 0h2m-2 0v-5m-9 5v-5a1 1 0 011-1h2a1 1 0 011 1v5"
-              />
-            </svg>
-            <span className="truncate">{user.accountName}</span>
-          </span>
+          <div className="hidden sm:block">
+            <AccountSwitcher
+              activeAccountId={user.accountId}
+              activeAccountName={user.accountName}
+              memberships={user.memberships}
+            />
+          </div>
           <span className="hidden md:inline text-xs text-slate-500 truncate max-w-[14rem]">
             {user.email}
           </span>

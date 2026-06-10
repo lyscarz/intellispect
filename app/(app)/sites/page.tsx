@@ -43,7 +43,7 @@ export default async function SitesPage({
   }
 
   const [sites, fleetCounts] = await Promise.all([
-    listSitesForFleet(ctx.accountId, active.id),
+    listSitesForFleet(ctx.accountId, active.id, ctx.allowedFleetIds),
     countMachinesByFleet(ctx.accountId),
   ]);
   const countsForTabs: Record<string, number> = {};

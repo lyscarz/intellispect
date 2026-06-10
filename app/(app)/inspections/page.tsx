@@ -11,42 +11,34 @@ export default async function InspectionsPage() {
 
   return (
     <div className="max-w-5xl">
-      <div className="flex items-start justify-between gap-4">
+      <div className="text-sm">
+        <Link
+          href="/inspection-history"
+          className="text-slate-500 hover:text-slate-900 inline-flex items-center gap-1"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Inspections
+        </Link>
+      </div>
+
+      <div className="mt-2 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Inspection builder</h1>
+          <h1 className="text-xl font-bold text-slate-900">Build &amp; manage templates</h1>
           <p className="text-sm text-slate-500 mt-0.5">
             Author the inspections your operators run from their devices. Form-based or AI-driven.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/inspection-history"
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            All runs
-          </Link>
-          <Link
-            href="/inspections/test"
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
-            Test against a machine
-          </Link>
-          <Link
-            href="/inspections/new"
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            New inspection
-          </Link>
-        </div>
+        <Link
+          href="/inspections/new"
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+          New inspection
+        </Link>
       </div>
 
       {templates.length === 0 ? (
