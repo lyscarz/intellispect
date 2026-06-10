@@ -2,12 +2,21 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import QRCode from 'qrcode';
 import { createInviteAction, type CreateInviteResult } from './actions';
 import type { Fleet } from '@/lib/types';
 
 type Role = 'admin_user' | 'operator';
 
-export function InviteButton({ fleets }: { fleets: Fleet[] }) {
+export function InviteButton({
+  fleets,
+  canInviteAdmins = true,
+}: {
+  fleets: Fleet[];
+  /** Owners can invite both admin_user and operator. Invited admins can only
+   *  invite operators (and themselves can't elevate someone to admin). */
+  canInviteAdmins?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -21,22 +30,48 @@ export function InviteButton({ fleets }: { fleets: Fleet[] }) {
         </svg>
         Invite member
       </button>
-      {open && <InviteModal fleets={fleets} onClose={() => setOpen(false)} />}
+      {open && (
+        <InviteModal
+          fleets={fleets}
+          canInviteAdmins={canInviteAdmins}
+          onClose={() => setOpen(false)}
+        />
+      )}
     </>
   );
 }
 
-function InviteModal({ fleets, onClose }: { fleets: Fleet[]; onClose: () => void }) {
+function InviteModal({
+  fleets,
+  canInviteAdmins,
+  onClose,
+}: {
+  fleets: Fleet[];
+  canInviteAdmins: boolean;
+  onClose: () => void;
+}) {
   const router = useRouter();
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<Role>('admin_user');
+  const [role, setRole] = useState<Role>(canInviteAdmins ? 'admin_user' : 'operator');
   const [selectedFleetIds, setSelectedFleetIds] = useState<string[]>(
     fleets.map((f) => f.id)
   );
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CreateInviteResult | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Render the QR code as a data URL when the invite is created.
+  useEffect(() => {
+    if (!result?.magicLink) {
+      setQrDataUrl(null);
+      return;
+    }
+    QRCode.toDataURL(result.magicLink, { margin: 1, width: 240, errorCorrectionLevel: 'M' })
+      .then(setQrDataUrl)
+      .catch(() => setQrDataUrl(null));
+  }, [result?.magicLink]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -115,25 +150,42 @@ function InviteModal({ fleets, onClose }: { fleets: Fleet[]; onClose: () => void
                 Invite email sent. They can also use the link below if they don&apos;t see it.
               </div>
             )}
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">
-                Invite link
-              </label>
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0">
+                {qrDataUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={qrDataUrl}
+                    alt="Invite QR code"
+                    className="w-32 h-32 rounded border border-slate-200 bg-white"
+                  />
+                ) : (
+                  <div className="w-32 h-32 rounded border border-slate-200 bg-slate-50 flex items-center justify-center text-[10px] text-slate-400">
+                    QR…
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  Invite link
+                </label>
                 <input
                   type="text"
                   readOnly
                   value={result.magicLink}
-                  className="flex-1 px-2 py-1.5 text-xs rounded-md border border-slate-300 bg-slate-50 font-mono"
+                  className="w-full px-2 py-1.5 text-xs rounded-md border border-slate-300 bg-slate-50 font-mono"
                   onClick={(e) => (e.currentTarget as HTMLInputElement).select()}
                 />
                 <button
                   type="button"
                   onClick={copyMagicLink}
-                  className="px-3 py-1.5 rounded-md bg-slate-900 text-white text-xs font-medium hover:bg-slate-800"
+                  className="mt-2 w-full px-3 py-1.5 rounded-md bg-slate-900 text-white text-xs font-medium hover:bg-slate-800"
                 >
-                  {copied ? 'Copied' : 'Copy'}
+                  {copied ? 'Copied' : 'Copy link'}
                 </button>
+                <p className="mt-1.5 text-[11px] text-slate-500">
+                  Scan with phone camera or send the link via email.
+                </p>
               </div>
             </div>
             <div className="flex justify-end pt-2">
@@ -158,13 +210,15 @@ function InviteModal({ fleets, onClose }: { fleets: Fleet[]; onClose: () => void
 
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Role</label>
-              <div className="grid grid-cols-2 gap-1.5">
-                <RoleOption
-                  selected={role === 'admin_user'}
-                  onClick={() => setRole('admin_user')}
-                  label="Admin"
-                  body="Full access on granted fleets. Cannot invite or manage other members."
-                />
+              <div className={`grid gap-1.5 ${canInviteAdmins ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                {canInviteAdmins && (
+                  <RoleOption
+                    selected={role === 'admin_user'}
+                    onClick={() => setRole('admin_user')}
+                    label="Admin"
+                    body="Full access on granted fleets. Can invite operators but not edit other members."
+                  />
+                )}
                 <RoleOption
                   selected={role === 'operator'}
                   onClick={() => setRole('operator')}

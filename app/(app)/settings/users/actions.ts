@@ -18,6 +18,30 @@ function ensureOwner(role: AccountRole) {
   }
 }
 
+/** Owners and invited admins can both create invites. Operators cannot. */
+function ensureCanInvite(role: AccountRole) {
+  if (role !== 'account_admin' && role !== 'admin_user') {
+    throw new Error('Only owners and admins can invite');
+  }
+}
+
+/** When the inviter is fleet-scoped, the invite's allowed_fleet_ids MUST be a
+ *  subset of what the inviter has access to. Owners are unrestricted. */
+function validateFleetSubset(
+  inviterRole: AccountRole,
+  inviterAllowedFleetIds: string[] | null,
+  requestedFleetIds: string[]
+) {
+  if (inviterRole === 'account_admin') return; // unrestricted
+  if (inviterAllowedFleetIds === null) return; // shouldn't happen for non-owners, defensive
+  const allowed = new Set(inviterAllowedFleetIds);
+  for (const id of requestedFleetIds) {
+    if (!allowed.has(id)) {
+      throw new Error('You can only grant fleets you have access to');
+    }
+  }
+}
+
 function appOrigin(): string {
   // The invite magic link points back at our app — derive the host from the
   // incoming request. Falls back to NEXT_PUBLIC_APP_URL if set.
@@ -42,7 +66,13 @@ export async function createInviteAction(input: {
   allowedFleetIds: string[];
 }): Promise<CreateInviteResult> {
   const ctx = await getSessionContext();
-  ensureOwner(ctx.role);
+  ensureCanInvite(ctx.role);
+  // Non-owners can't invite owners (no such option in the UI either, but be defensive).
+  if ((input.role as AccountRole) === 'account_admin' && ctx.role !== 'account_admin') {
+    throw new Error('Only owners can invite other owners');
+  }
+  // Non-owners can only grant fleets they themselves have.
+  validateFleetSubset(ctx.role, ctx.allowedFleetIds, input.allowedFleetIds);
 
   const result = await createInvite(
     {
@@ -65,7 +95,7 @@ export async function createInviteAction(input: {
 
 export async function revokeInviteAction(inviteId: string): Promise<void> {
   const ctx = await getSessionContext();
-  ensureOwner(ctx.role);
+  ensureCanInvite(ctx.role);
   await revokeInvite(ctx.accountId, inviteId);
   revalidatePath('/settings/users');
 }

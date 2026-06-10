@@ -27,11 +27,14 @@ export function MembersTable({
   currentUserId,
   fleets,
   fleetsById,
+  isOwner,
 }: {
   members: AccountMember[];
   currentUserId: string;
   fleets: Fleet[];
   fleetsById: Record<string, string>;
+  /** Only owners can edit roles / fleet grants / remove members. */
+  isOwner: boolean;
 }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
@@ -52,6 +55,7 @@ export function MembersTable({
               isSelf={m.userId === currentUserId}
               fleets={fleets}
               fleetsById={fleetsById}
+              canManage={isOwner}
             />
           ))}
         </tbody>
@@ -65,11 +69,13 @@ function MemberRow({
   isSelf,
   fleets,
   fleetsById,
+  canManage,
 }: {
   member: AccountMember;
   isSelf: boolean;
   fleets: Fleet[];
   fleetsById: Record<string, string>;
+  canManage: boolean;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -142,7 +148,7 @@ function MemberRow({
           )}
         </td>
         <td className="px-3 py-2 align-middle text-right whitespace-nowrap">
-          {!isOwnerRow && (
+          {!isOwnerRow && canManage && (
             <button
               type="button"
               onClick={() => setEditing((e) => !e)}
@@ -151,7 +157,7 @@ function MemberRow({
               {editing ? 'Done' : 'Edit'}
             </button>
           )}
-          {!isOwnerRow && (
+          {!isOwnerRow && canManage && (
             <button
               type="button"
               onClick={remove}
@@ -164,9 +170,12 @@ function MemberRow({
           {isOwnerRow && (
             <span className="text-[11px] text-slate-400">Owner</span>
           )}
+          {!isOwnerRow && !canManage && (
+            <span className="text-[11px] text-slate-400">Owner-only</span>
+          )}
         </td>
       </tr>
-      {editing && !isOwnerRow && (
+      {editing && !isOwnerRow && canManage && (
         <tr className="border-t border-slate-100 bg-slate-50">
           <td colSpan={4} className="px-3 py-3">
             <div className="grid gap-3 sm:grid-cols-2">

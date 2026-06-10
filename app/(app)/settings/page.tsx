@@ -46,7 +46,7 @@ export default async function SettingsPage() {
           </div>
         </Link>
 
-        {ctx.role === 'account_admin' && (
+        {ctx.role !== 'operator' && (
           <Link
             href="/settings/users"
             className="block rounded-xl ring-1 ring-slate-200 bg-white px-4 py-4 hover:bg-slate-50"
