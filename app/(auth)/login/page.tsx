@@ -46,7 +46,7 @@ function LoginForm() {
   return (
     <div className="bg-white rounded-xl ring-1 ring-slate-200 p-6 shadow-sm">
       <h1 className="text-xl font-semibold text-slate-900">Log in</h1>
-      <p className="mt-1 text-sm text-slate-500">Welcome back to IntelliCheck.</p>
+      <p className="mt-1 text-sm text-slate-500">Welcome back.</p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <div>
@@ -103,7 +103,7 @@ function LoginFormFallback() {
   return (
     <div className="bg-white rounded-xl ring-1 ring-slate-200 p-6 shadow-sm">
       <h1 className="text-xl font-semibold text-slate-900">Log in</h1>
-      <p className="mt-1 text-sm text-slate-500">Welcome back to IntelliCheck.</p>
+      <p className="mt-1 text-sm text-slate-500">Welcome back.</p>
       <div className="mt-6 space-y-4">
         <div className="h-8 rounded bg-slate-100 animate-pulse" />
         <div className="h-8 rounded bg-slate-100 animate-pulse" />

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { AccountSwitcher } from './AccountSwitcher';
 
 /**
@@ -164,18 +165,15 @@ export function AppShell({
       >
         {/* Brand + (mobile) close */}
         <div className="h-14 flex items-center justify-between px-4 border-b border-slate-200">
-          <Link href="/fleet" className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-brand-600 rounded-md flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2.5}
-                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                />
-              </svg>
-            </div>
-            <span className="font-semibold text-slate-900 tracking-tight">IntelliCheck</span>
+          <Link href="/fleet" className="flex items-center">
+            <Image
+              src="/intellicheck-logo.png"
+              alt="IntelliCheck"
+              width={500}
+              height={120}
+              priority
+              className="h-8 w-auto object-contain"
+            />
           </Link>
           <button
             type="button"
