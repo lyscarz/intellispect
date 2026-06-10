@@ -3,6 +3,8 @@ import type { Metadata, Viewport } from 'next';
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { ServiceWorkerRegistration } from './ServiceWorkerRegistration';
+import { MobileTabBar } from './MobileTabBar';
+import { CheckInBar } from './CheckInBar';
 
 export const metadata: Metadata = {
   title: 'IntelliCheck',
@@ -22,9 +24,6 @@ export const dynamic = 'force-dynamic';
 
 export default async function MobileLayout({ children }: { children: ReactNode }) {
   // Auth gate: /m is at the root (not under (app)/), so we re-enforce here.
-  // We do NOT call getSessionContext() — that auto-creates an account on first
-  // visit, which is wrong for the operator app. We just check the Supabase
-  // session exists and redirect to /login?next=/m if not.
   const supabase = createSupabaseServerClient();
   const {
     data: { user },
@@ -33,14 +32,24 @@ export default async function MobileLayout({ children }: { children: ReactNode }
 
   return (
     <div
-      className="min-h-screen bg-slate-50 text-slate-900"
-      style={{
-        paddingTop: 'env(safe-area-inset-top)',
-        paddingBottom: 'env(safe-area-inset-bottom)',
-      }}
+      className="min-h-screen bg-slate-50 text-slate-900 flex flex-col"
+      style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       <ServiceWorkerRegistration />
-      {children}
+      {/* Content fills the screen; the tab bar + (optional) check-in bar
+          live below as fixed elements. We reserve their height via padding
+          on the scrollable area. The tab bar is ~56px + safe-area-inset;
+          the check-in bar is ~48px when present. Without precise math we
+          give ~110px to be safe and let the bars overlay if the page is
+          short. */}
+      <main
+        className="flex-1"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 110px)' }}
+      >
+        {children}
+      </main>
+      <CheckInBar />
+      <MobileTabBar />
     </div>
   );
 }
