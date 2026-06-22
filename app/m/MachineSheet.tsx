@@ -27,11 +27,14 @@ export function MachineSheet({
    *  issues, telematics, etc.). */
   footer?: React.ReactNode;
 }) {
-  // Translation expressed as % of viewport. 100 = fully offscreen.
+  // Translation expressed as % of the sheet's height (95 vh). 100 = fully
+  // offscreen. Sheet height is 95 vh so the bottom is always at viewport
+  // bottom when expanded (translateY 0) — keeps the sticky footer inside the
+  // visible area. Peek = 68 → 95 × (1 − 0.68) ≈ 30 vh visible.
   const SNAP_TY: Record<SheetSnap, number> = {
     closed: 100,
-    peek: 70,
-    expanded: 5,
+    peek: 68,
+    expanded: 0,
   };
   const [tyPct, setTyPct] = useState(SNAP_TY[snap]);
   const dragStart = useRef<{ y: number; tyPct: number } | null>(null);
@@ -112,7 +115,7 @@ export function MachineSheet({
       <div
         className="fixed left-0 right-0 bottom-0 z-50 bg-white rounded-t-2xl shadow-2xl flex flex-col"
         style={{
-          height: '100vh',
+          height: '95vh',
           transform: `translateY(${tyPct}%)`,
           transition: dragStart.current ? 'none' : 'transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1)',
           paddingBottom: 'env(safe-area-inset-bottom)',

@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import type { Machine, Site } from '@/lib/types';
 import { useGeolocation } from '@/lib/use-geolocation';
 import { haversineKm, formatKm } from '@/lib/geo';
@@ -28,6 +29,8 @@ export function CheckInTab({
   sites: Site[];
 }) {
   const geo = useGeolocation();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { state: checkInState, checkOut } = useCheckIn();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [snap, setSnap] = useState<SheetSnap>('closed');
@@ -46,6 +49,17 @@ export function CheckInTab({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checkInState?.machineId, selectedId]);
+
+  // /m?openMachine=<id> — the CheckInBar (and any other deep link) uses this
+  // to ask us to open the sheet for a specific machine. We honour it once,
+  // then strip the param so a later page refresh doesn't keep reopening.
+  const openParam = searchParams.get('openMachine');
+  useEffect(() => {
+    if (!openParam) return;
+    setSelectedId(openParam);
+    setSnap('expanded');
+    router.replace('/m');
+  }, [openParam, router]);
 
   const siteName = useMemo(
     () => Object.fromEntries(sites.map((s) => [s.id, s.name])),
@@ -83,10 +97,17 @@ export function CheckInTab({
       .slice(0, NEARBY_LIMIT);
   }, [machines, geo.position]);
 
-  const selected = useMemo(
-    () => nearby.find((n) => n.machine.id === selectedId) ?? null,
-    [nearby, selectedId]
-  );
+  // Resolve the selected machine from the FULL list (not just nearby), so
+  // tapping the green CheckInBar from another tab can re-open the sheet even
+  // if the checked-in machine isn't in the top-10-nearest. Distance comes
+  // from `nearby` when present, otherwise null.
+  const selected = useMemo(() => {
+    if (!selectedId) return null;
+    const machine = machines.find((m) => m.id === selectedId);
+    if (!machine) return null;
+    const inNearby = nearby.find((n) => n.machine.id === selectedId);
+    return { machine, distanceKm: inNearby?.distanceKm ?? null };
+  }, [machines, nearby, selectedId]);
 
   function openMachine(id: string) {
     setSelectedId(id);
