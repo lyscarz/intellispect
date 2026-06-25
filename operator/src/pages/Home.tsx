@@ -95,7 +95,7 @@ export default function Home() {
 
   return (
     <Page name="home" pageContent={false}>
-      <Navbar>
+      <Navbar className={view === 'map' ? 'op-map-navbar' : undefined}>
         <NavTitle>
           <Segmented strong className="op-seg">
             <Button active={view === 'map'} onClick={() => setView('map')}>

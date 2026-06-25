@@ -2,6 +2,10 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import type { FleetMachine } from '../types';
 import { activityOf } from '../lib/format';
+import { haversineKm } from '../lib/geo';
+
+// How many of the closest machines to frame alongside the user's location.
+const NEAREST_TO_FIT = 10;
 
 interface Props {
   machines: FleetMachine[];
@@ -33,6 +37,7 @@ export default function LeafletMap({ machines, userPosition, selectedId, onSelec
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const userMarkerRef = useRef<L.Marker | null>(null);
   const fittedRef = useRef(false);
+  const lastFitPosRef = useRef<string | null>(null);
 
   // Init the map once.
   useEffect(() => {
@@ -100,10 +105,11 @@ export default function LeafletMap({ machines, userPosition, selectedId, onSelec
     }
   }, [machines, selectedId, onSelect, userPosition]);
 
-  // User position marker.
+  // User position marker + fit to "my area": the user plus the nearest machines.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !userPosition) return;
+
     if (userMarkerRef.current) {
       userMarkerRef.current.setLatLng(userPosition);
     } else {
@@ -112,8 +118,25 @@ export default function LeafletMap({ machines, userPosition, selectedId, onSelec
         zIndexOffset: 1000,
       }).addTo(map);
     }
-    map.setView(userPosition, 12);
-  }, [userPosition]);
+
+    // Only (re)fit when the position itself changes — not on every filter tweak,
+    // which would make the map jump around while the user is browsing.
+    const posKey = `${userPosition[0].toFixed(5)},${userPosition[1].toFixed(5)}`;
+    if (lastFitPosRef.current === posKey) return;
+    lastFitPosRef.current = posKey;
+
+    const located = machines
+      .map((m) => {
+        const c = m.location?.coordinates;
+        return c ? ([c[1], c[0]] as [number, number]) : null;
+      })
+      .filter((p): p is [number, number] => p !== null)
+      .sort((a, b) => haversineKm(userPosition, a) - haversineKm(userPosition, b))
+      .slice(0, NEAREST_TO_FIT);
+
+    const bounds = L.latLngBounds([userPosition, ...located]);
+    map.fitBounds(bounds, { padding: [60, 60], maxZoom: 15 });
+  }, [userPosition, machines]);
 
   // Pan to the selected machine.
   useEffect(() => {

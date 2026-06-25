@@ -72,6 +72,17 @@ body,
   -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
+/* Fullscreen map (Home map view): no frosted bar over the map — the controls
+   float as their own pills on a crisp, edge-to-edge map. */
+.navbar.op-map-navbar .navbar-bg {
+  display: none;
+}
+.op-map-navbar .navbar-inner .right,
+.op-map-navbar .navbar-inner .left {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 /* =========================================================================
    Phone tabbar (floating glass pill) ←→ tablet/desktop sidebar
    ========================================================================= */
@@ -82,14 +93,13 @@ body,
 .ios .tabbar-phone .toolbar-pane {
   margin: 3px 14px 8px;
   border-radius: 26px;
-  background: rgba(255, 255, 255, 0.78);
-  -webkit-backdrop-filter: saturate(180%) blur(22px);
-  backdrop-filter: saturate(180%) blur(22px);
-  box-shadow: 0 6px 26px rgba(15, 23, 42, 0.16);
+  /* Solid (not frosted) so it never blurs the map behind it. */
+  background: var(--f7-bars-bg-color);
+  box-shadow: 0 6px 26px rgba(15, 23, 42, 0.18);
 }
 .ios.dark .tabbar-phone .toolbar-pane {
-  background: rgba(15, 26, 46, 0.8);
-  box-shadow: 0 6px 26px rgba(0, 0, 0, 0.5);
+  background: #18233b;
+  box-shadow: 0 6px 26px rgba(0, 0, 0, 0.55);
 }
 
 /* Sidebar visible ≥768 (F7 visibleBreakpoint); tabbar hidden. */
@@ -235,14 +245,30 @@ body,
   width: 168px;
   margin: 0 auto;
 }
+/* Lift the Map/List control off the map (the map navbar has no background). */
+.op-map-navbar .op-seg {
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.22);
+  border-radius: 9px;
+}
 
 .op-filter-btn {
   position: relative;
 }
+/* Over the map, give the filter control a solid circular backing for legibility. */
+.op-map-navbar .op-filter-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--f7-bars-bg-color);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.18);
+}
 .op-filter-dot {
   position: absolute;
-  top: 4px;
-  right: 0;
+  top: 2px;
+  right: 2px;
   width: 9px;
   height: 9px;
   border-radius: 50%;
