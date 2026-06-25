@@ -15,6 +15,7 @@ import {
 } from 'framework7-react';
 import LeafletMap from '../components/LeafletMap';
 import MachineListItem from '../components/MachineListItem';
+import CheckInSheet, { type CheckInState } from '../components/CheckInSheet';
 import FilterSheet, {
   EMPTY_FILTERS,
   filtersActive,
@@ -32,6 +33,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<ViewMode>('map');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [checkIn, setCheckIn] = useState<CheckInState | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
 
@@ -88,6 +90,16 @@ export default function Home() {
     [enriched, filters]
   );
 
+  const selectedMachine = selectedId
+    ? filtered.find((m) => m.assetId === selectedId) ?? null
+    : null;
+
+  const doCheckIn = (m: FleetMachine) => {
+    setCheckIn({ machine: m, startedAt: Date.now() });
+    setSelectedId(null);
+  };
+  const doCheckOut = () => setCheckIn(null);
+
   return (
     <Page name="home" pageContent={false}>
       <Navbar className={view === 'map' ? 'op-map-navbar' : undefined}>
@@ -127,13 +139,6 @@ export default function Home() {
             selectedId={selectedId}
             onSelect={setSelectedId}
           />
-
-          {selectedId && (
-            <SelectedCard
-              machine={filtered.find((m) => m.assetId === selectedId) ?? null}
-              onClose={() => setSelectedId(null)}
-            />
-          )}
         </div>
       ) : (
         <div className="page-content op-list-content">
@@ -158,36 +163,14 @@ export default function Home() {
         setFilters={setFilters}
         availableTypes={availableTypes}
       />
-    </Page>
-  );
-}
 
-function SelectedCard({
-  machine,
-  onClose,
-}: {
-  machine: FleetMachine | null;
-  onClose: () => void;
-}) {
-  if (!machine) return null;
-  return (
-    <div className="op-selected-card">
-      <div className="op-selected-head">
-        <div className="op-selected-title">{machine.name}</div>
-        <Link onClick={onClose}>
-          <Icon f7="xmark_circle_fill" />
-        </Link>
-      </div>
-      <div className="op-selected-sub">
-        {[machine.brand, machine.model].filter(Boolean).join(' · ') || machine.assetType}
-      </div>
-      <div className="op-selected-meta">
-        <span>
-          {machine.distanceKm != null
-            ? `${machine.distanceKm.toFixed(1)} km away`
-            : machine.location?.address?.city ?? '—'}
-        </span>
-      </div>
-    </div>
+      <CheckInSheet
+        machine={checkIn ? null : selectedMachine}
+        checkIn={checkIn}
+        onCheckIn={doCheckIn}
+        onCheckOut={doCheckOut}
+        onClose={() => setSelectedId(null)}
+      />
+    </Page>
   );
 }
