@@ -1,0 +1,683 @@
+/* =========================================================================
+   Operator — Framework7 v9 (iOS theme) app styles
+   F7 puts both `ios` and `dark` on <html>; this file loads after F7's bundle,
+   so equal-specificity rules win.
+   ========================================================================= */
+
+:root {
+  --f7-theme-color: #2563eb;
+  --f7-theme-color-rgb: 37, 99, 235;
+  --f7-theme-color-shade: #1d4ed8;
+  --f7-theme-color-tint: #3b82f6;
+
+  /* Occupied bar heights (base + safe area) used by custom Home overlays. */
+  --op-bar-top: calc(env(safe-area-inset-top, 0px) + 44px);
+  --op-bar-bottom: calc(env(safe-area-inset-bottom, 0px) + 72px);
+}
+
+@media (min-width: 768px) {
+  :root {
+    --op-bar-bottom: 16px;
+  }
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---- Light "day" palette ---- */
+.ios {
+  --f7-page-bg-color: #f4f5f7;
+  --f7-bars-bg-color: #ffffff;
+  --f7-card-bg-color: #ffffff;
+  --f7-block-strong-bg-color: #ffffff;
+  --f7-list-bg-color: #ffffff;
+  --f7-list-strong-bg-color: #ffffff;
+  --f7-list-item-bg-color: #ffffff;
+
+  --f7-card-border-radius: 18px;
+  --f7-list-inset-border-radius: 16px;
+  --f7-block-inset-border-radius: 16px;
+  --f7-button-border-radius: 13px;
+  --f7-sheet-border-radius: 22px;
+  --f7-popup-border-radius: 22px;
+  --f7-bars-translucent-opacity: 0.8;
+}
+
+/* ---- Dark "night" palette ---- */
+.ios.dark {
+  --f7-page-bg-color: #0b1220;
+  --f7-bars-bg-color: #0f1a2e;
+  --f7-card-bg-color: #121d33;
+  --f7-block-strong-bg-color: #121d33;
+  --f7-list-bg-color: #121d33;
+  --f7-list-strong-bg-color: #121d33;
+  --f7-list-item-bg-color: #121d33;
+
+  --f7-theme-color: #3b82f6;
+  --f7-theme-color-rgb: 59, 130, 246;
+  --f7-theme-color-shade: #2563eb;
+  --f7-theme-color-tint: #60a5fa;
+}
+
+/* Liquid-glass bars. */
+.ios .navbar-bg,
+.ios .toolbar-bg {
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+/* =========================================================================
+   Phone tabbar (floating glass pill) ←→ tablet/desktop sidebar
+   ========================================================================= */
+
+.ios .tabbar-phone {
+  background: transparent;
+}
+.ios .tabbar-phone .toolbar-pane {
+  margin: 3px 14px 8px;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.78);
+  -webkit-backdrop-filter: saturate(180%) blur(22px);
+  backdrop-filter: saturate(180%) blur(22px);
+  box-shadow: 0 6px 26px rgba(15, 23, 42, 0.16);
+}
+.ios.dark .tabbar-phone .toolbar-pane {
+  background: rgba(15, 26, 46, 0.8);
+  box-shadow: 0 6px 26px rgba(0, 0, 0, 0.5);
+}
+
+/* Sidebar visible ≥768 (F7 visibleBreakpoint); tabbar hidden. */
+@media (min-width: 768px) {
+  .tabbar-phone {
+    display: none !important;
+  }
+}
+
+.sidebar-panel {
+  --f7-panel-width: 248px;
+  background: var(--f7-bars-bg-color);
+}
+.sidebar-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 22px;
+  font-weight: 700;
+  padding: calc(env(safe-area-inset-top) + 22px) 20px 18px;
+}
+.sidebar-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+}
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 10px;
+}
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border: none;
+  background: transparent;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--f7-text-color);
+  cursor: pointer;
+  text-align: left;
+}
+.sidebar-item i {
+  font-size: 22px;
+  color: var(--f7-theme-color);
+}
+.sidebar-item.active {
+  background: rgba(var(--f7-theme-color-rgb), 0.14);
+  color: var(--f7-theme-color);
+}
+
+/* =========================================================================
+   Shared bits
+   ========================================================================= */
+
+.op-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.op-muted {
+  color: var(--f7-text-color-secondary, #8e8e93);
+  font-size: 14px;
+}
+.op-sub {
+  color: var(--f7-text-color-secondary, #8e8e93);
+  font-size: 13px;
+}
+
+.op-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.op-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.op-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.op-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.op-meta {
+  font-size: 12px;
+  color: var(--f7-text-color-secondary, #8e8e93);
+}
+.op-dist {
+  color: var(--f7-theme-color);
+  font-weight: 600;
+  font-size: 13px;
+}
+.item-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+/* =========================================================================
+   Home — map + overlays
+   ========================================================================= */
+
+.op-seg {
+  width: 168px;
+  margin: 0 auto;
+}
+
+.op-filter-btn {
+  position: relative;
+}
+.op-filter-dot {
+  position: absolute;
+  top: 4px;
+  right: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 2px solid var(--f7-bars-bg-color);
+}
+
+.op-fullmap {
+  position: absolute;
+  inset: 0;
+}
+.op-map {
+  width: 100%;
+  height: 100%;
+  /* Contain Leaflet's internal z-indexes so they never paint over the F7
+     bars / overlays (see CLAUDE.md z-index gotcha). */
+  isolation: isolate;
+  background: #e9eef3;
+}
+.ios.dark .op-map {
+  background: #0f1726;
+}
+
+.op-map-top {
+  position: absolute;
+  top: calc(var(--op-bar-top) + 8px);
+  left: 12px;
+  z-index: 1500;
+}
+.op-count-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: var(--f7-bars-bg-color);
+  box-shadow: 0 3px 14px rgba(15, 23, 42, 0.18);
+  font-size: 13px;
+  font-weight: 600;
+}
+.op-sample-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.18);
+  padding: 1px 6px;
+  border-radius: 6px;
+}
+
+.op-locate {
+  position: absolute;
+  top: calc(var(--op-bar-top) + 8px);
+  right: 12px;
+  left: auto;
+  /* Abs-pos blockifies inline-flex → flex, whose width:auto stretches to fill.
+     max-content forces shrink-to-content so the button hugs the right. */
+  width: max-content;
+  white-space: nowrap;
+  z-index: 1500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 999px;
+  background: var(--f7-theme-color);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 3px 14px rgba(37, 99, 235, 0.4);
+  cursor: pointer;
+}
+.op-locate i {
+  font-size: 16px;
+}
+
+.op-selected-card {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: var(--op-bar-bottom);
+  z-index: 1500;
+  background: var(--f7-card-bg-color);
+  border-radius: 18px;
+  padding: 14px 16px;
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.24);
+}
+.op-selected-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.op-selected-title {
+  font-size: 17px;
+  font-weight: 700;
+}
+.op-selected-sub {
+  color: var(--f7-text-color-secondary, #8e8e93);
+  font-size: 13px;
+  margin-top: 2px;
+}
+.op-selected-meta {
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--f7-theme-color);
+}
+
+/* User-location pulse marker */
+.op-user-dot {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #2563eb;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.4);
+}
+.op-user-pulse {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.3);
+  animation: op-pulse 1.8s ease-out infinite;
+}
+@keyframes op-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* Home list view (custom scroll container since pageContent is off) */
+.op-list-content {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-top: var(--op-bar-top);
+  padding-bottom: var(--op-bar-bottom);
+}
+.op-sample-banner {
+  color: #b45309;
+  font-size: 13px;
+}
+
+/* =========================================================================
+   Log — stacked duration bars
+   ========================================================================= */
+
+.op-stack {
+  display: flex;
+  height: 8px;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-top: 8px;
+  background: rgba(100, 116, 139, 0.18);
+}
+.op-stack-drive {
+  background: #10b981;
+}
+.op-stack-idle {
+  background: #f59e0b;
+}
+.op-stack-stopped {
+  background: #94a3b8;
+}
+.op-stack-legend {
+  display: flex;
+  gap: 12px;
+  margin-top: 7px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--f7-text-color-secondary, #8e8e93);
+}
+.op-stack-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.op-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.op-dot-drive {
+  background: #10b981;
+}
+.op-dot-idle {
+  background: #f59e0b;
+}
+.op-dot-stopped {
+  background: #94a3b8;
+}
+
+/* =========================================================================
+   Inbox
+   ========================================================================= */
+
+.op-inbox-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+.op-inbox-icon i {
+  font-size: 20px;
+}
+.op-inbox-icon-lg {
+  width: 48px;
+  height: 48px;
+  border-radius: 13px;
+}
+.op-inbox-icon-lg i {
+  font-size: 24px;
+}
+.op-unread-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--f7-theme-color);
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.op-unread-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  background: var(--f7-theme-color);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  margin-right: 8px;
+}
+.op-msg-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+}
+.op-msg-from {
+  font-size: 16px;
+  font-weight: 700;
+}
+.op-msg-body {
+  line-height: 1.5;
+  margin: 0;
+}
+.op-msg-actions {
+  display: flex;
+  flex-direction: column;
+}
+
+/* =========================================================================
+   Filter sheet
+   ========================================================================= */
+
+.op-sheet-grip {
+  width: 38px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(120, 120, 128, 0.4);
+  margin: 8px auto 0;
+}
+.op-range-label {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.op-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.op-chips .op-chip {
+  display: inline-flex;
+  align-items: center;
+  width: auto;
+  flex: 0 0 auto;
+  border: 1px solid rgba(120, 120, 128, 0.3);
+  background: transparent;
+  color: var(--f7-text-color);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 14px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+.op-chips .op-chip-active {
+  background: var(--f7-theme-color);
+  border-color: var(--f7-theme-color);
+  color: #fff;
+}
+
+/* =========================================================================
+   Login
+   ========================================================================= */
+
+.op-login-brand {
+  text-align: center;
+  padding: 14vh 24px 8px;
+}
+.op-login-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  margin: 0 auto 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 800;
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.4);
+}
+.op-login-title {
+  font-size: 26px;
+  font-weight: 800;
+}
+.op-login-sub {
+  color: var(--f7-text-color-secondary, #8e8e93);
+  font-size: 15px;
+  margin-top: 4px;
+}
+.op-login-error {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 14px;
+}
+
+/* =========================================================================
+   Profile
+   ========================================================================= */
+
+.op-profile-head {
+  text-align: center;
+  padding: 16px 20px 8px;
+}
+.op-avatar {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  border: none;
+  margin: 0 auto 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: #fff;
+  font-size: 30px;
+  font-weight: 700;
+  cursor: pointer;
+  overflow: visible;
+}
+.op-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.op-avatar-edit {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--f7-bars-bg-color);
+  color: var(--f7-theme-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.25);
+}
+.op-profile-name {
+  font-size: 20px;
+  font-weight: 700;
+}
+.op-inline-add {
+  float: right;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.op-exp {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.op-exp-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.op-exp-label {
+  width: 96px;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.op-exp-track {
+  flex: 1;
+  height: 10px;
+  border-radius: 5px;
+  background: rgba(100, 116, 139, 0.18);
+  overflow: hidden;
+}
+.op-exp-fill {
+  height: 100%;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+}
+.op-exp-hours {
+  width: 64px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--f7-text-color-secondary, #8e8e93);
+  flex-shrink: 0;
+}
