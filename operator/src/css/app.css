@@ -242,13 +242,27 @@ body,
    ========================================================================= */
 
 .op-seg {
-  width: 168px;
+  width: 156px;
   margin: 0 auto;
 }
 /* Lift the Map/List control off the map (the map navbar has no background). */
 .op-map-navbar .op-seg {
   box-shadow: 0 2px 12px rgba(15, 23, 42, 0.22);
   border-radius: 9px;
+}
+/* Match the tabbar theme: bars-coloured track, blue active segment, white text. */
+.op-seg.segmented-strong {
+  background: var(--f7-bars-bg-color);
+}
+.op-seg .segmented-highlight {
+  background: var(--f7-theme-color);
+}
+.op-seg .button {
+  color: var(--f7-text-color-secondary, #64748b);
+  font-weight: 600;
+}
+.op-seg .button.button-active {
+  color: #fff;
 }
 
 .op-filter-btn {

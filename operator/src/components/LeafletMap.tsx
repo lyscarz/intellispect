@@ -4,8 +4,12 @@ import type { FleetMachine } from '../types';
 import { activityOf } from '../lib/format';
 import { haversineKm } from '../lib/geo';
 
-// How many of the closest machines to frame alongside the user's location.
+// How many of the closest machines to frame around the user's location.
 const NEAREST_TO_FIT = 10;
+// Re-centre this long after the user last moved the map.
+const IDLE_RECENTER_MS = 5000;
+// Smallest half-span (deg) so we don't zoom in absurdly when machines are very close.
+const MIN_SPAN_DEG = 0.01;
 
 interface Props {
   machines: FleetMachine[];
@@ -39,6 +43,53 @@ export default function LeafletMap({ machines, userPosition, selectedId, onSelec
   const fittedRef = useRef(false);
   const lastFitPosRef = useRef<string | null>(null);
 
+  // Latest props, so the once-registered map handlers always see fresh values.
+  const machinesRef = useRef(machines);
+  const userPosRef = useRef(userPosition);
+  machinesRef.current = machines;
+  userPosRef.current = userPosition;
+
+  const programmaticRef = useRef(false);
+  const progResetRef = useRef<number | undefined>(undefined);
+  const idleTimerRef = useRef<number | undefined>(undefined);
+
+  // Centre the map on the user and size it to include the nearest N machines.
+  const recenterRef = useRef<() => void>(() => {});
+  recenterRef.current = () => {
+    const map = mapRef.current;
+    const pos = userPosRef.current;
+    if (!map || !pos) return;
+
+    const nearest = machinesRef.current
+      .map((m) => {
+        const c = m.location?.coordinates;
+        return c ? ([c[1], c[0]] as [number, number]) : null;
+      })
+      .filter((p): p is [number, number] => p !== null)
+      .sort((a, b) => haversineKm(pos, a) - haversineKm(pos, b))
+      .slice(0, NEAREST_TO_FIT);
+
+    // Symmetric span around the user → user ends up dead-centre, and the span
+    // is just large enough to reach the farthest of the nearest N machines.
+    let dLat = MIN_SPAN_DEG;
+    let dLng = MIN_SPAN_DEG;
+    nearest.forEach(([lat, lng]) => {
+      dLat = Math.max(dLat, Math.abs(lat - pos[0]));
+      dLng = Math.max(dLng, Math.abs(lng - pos[1]));
+    });
+    const bounds = L.latLngBounds(
+      [pos[0] - dLat, pos[1] - dLng],
+      [pos[0] + dLat, pos[1] + dLng]
+    );
+
+    programmaticRef.current = true;
+    window.clearTimeout(progResetRef.current);
+    progResetRef.current = window.setTimeout(() => {
+      programmaticRef.current = false;
+    }, 700);
+    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+  };
+
   // Init the map once.
   useEffect(() => {
     if (!elRef.current || mapRef.current) return;
@@ -51,13 +102,30 @@ export default function LeafletMap({ machines, userPosition, selectedId, onSelec
     }).addTo(map);
     mapRef.current = map;
 
-    // The tab/page may not be sized when the map mounts — recalc on layout.
     const ro = new ResizeObserver(() => map.invalidateSize());
     ro.observe(elRef.current);
     window.setTimeout(() => map.invalidateSize(), 200);
 
+    // Auto-recentre after the user stops interacting with the map (only when we
+    // actually have a location). Our own fitBounds calls set programmaticRef so
+    // they don't count as "user moved".
+    const onMoveStart = () => {
+      if (programmaticRef.current) return;
+      window.clearTimeout(idleTimerRef.current);
+    };
+    const onMoveEnd = () => {
+      if (programmaticRef.current) return;
+      if (!userPosRef.current) return;
+      window.clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = window.setTimeout(() => recenterRef.current(), IDLE_RECENTER_MS);
+    };
+    map.on('movestart', onMoveStart);
+    map.on('moveend', onMoveEnd);
+
     return () => {
       ro.disconnect();
+      window.clearTimeout(idleTimerRef.current);
+      window.clearTimeout(progResetRef.current);
       map.remove();
       mapRef.current = null;
       markersRef.current.clear();
@@ -99,13 +167,19 @@ export default function LeafletMap({ machines, userPosition, selectedId, onSelec
       }
     });
 
+    // Pre-location fallback: frame the whole fleet until we have the user.
     if (!fittedRef.current && bounds.length && !userPosition) {
+      programmaticRef.current = true;
+      window.clearTimeout(progResetRef.current);
+      progResetRef.current = window.setTimeout(() => {
+        programmaticRef.current = false;
+      }, 700);
       map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
       fittedRef.current = true;
     }
   }, [machines, selectedId, onSelect, userPosition]);
 
-  // User position marker + fit to "my area": the user plus the nearest machines.
+  // User position marker + recentre when the position first arrives / changes.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !userPosition) return;
@@ -119,23 +193,10 @@ export default function LeafletMap({ machines, userPosition, selectedId, onSelec
       }).addTo(map);
     }
 
-    // Only (re)fit when the position itself changes — not on every filter tweak,
-    // which would make the map jump around while the user is browsing.
     const posKey = `${userPosition[0].toFixed(5)},${userPosition[1].toFixed(5)}`;
     if (lastFitPosRef.current === posKey) return;
     lastFitPosRef.current = posKey;
-
-    const located = machines
-      .map((m) => {
-        const c = m.location?.coordinates;
-        return c ? ([c[1], c[0]] as [number, number]) : null;
-      })
-      .filter((p): p is [number, number] => p !== null)
-      .sort((a, b) => haversineKm(userPosition, a) - haversineKm(userPosition, b))
-      .slice(0, NEAREST_TO_FIT);
-
-    const bounds = L.latLngBounds([userPosition, ...located]);
-    map.fitBounds(bounds, { padding: [60, 60], maxZoom: 15 });
+    recenterRef.current();
   }, [userPosition, machines]);
 
   // Pan to the selected machine.
@@ -144,7 +205,14 @@ export default function LeafletMap({ machines, userPosition, selectedId, onSelec
     if (!map || !selectedId) return;
     const m = machines.find((x) => x.assetId === selectedId);
     const c = m?.location?.coordinates;
-    if (c) map.panTo([c[1], c[0]]);
+    if (c) {
+      programmaticRef.current = true;
+      window.clearTimeout(progResetRef.current);
+      progResetRef.current = window.setTimeout(() => {
+        programmaticRef.current = false;
+      }, 700);
+      map.panTo([c[1], c[0]]);
+    }
   }, [selectedId, machines]);
 
   return <div ref={elRef} className="op-map" />;

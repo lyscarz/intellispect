@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Page,
   Navbar,
+  NavLeft,
   NavTitle,
   NavRight,
   Link,
@@ -49,6 +50,11 @@ export default function Home() {
     };
   }, []);
 
+  // Ask for the user's location automatically on load (no button needed).
+  useEffect(() => {
+    geo.request();
+  }, [geo.request]);
+
   // Enrich with distance + sort nearest-first when we have a position.
   const enriched: FleetMachine[] = useMemo(() => {
     const pos = geo.position;
@@ -82,20 +88,15 @@ export default function Home() {
     [enriched, filters]
   );
 
-  const locateLabel =
-    geo.status === 'locating'
-      ? 'Locating…'
-      : geo.status === 'denied'
-      ? 'Location denied'
-      : geo.status === 'unsupported'
-      ? 'No location'
-      : geo.position
-      ? 'Recenter'
-      : 'Use my location';
-
   return (
     <Page name="home" pageContent={false}>
       <Navbar className={view === 'map' ? 'op-map-navbar' : undefined}>
+        <NavLeft>
+          <span className="op-count-pill">
+            {filtered.length} {filtered.length === 1 ? 'asset' : 'assets'}
+            {!live && <span className="op-sample-tag">sample</span>}
+          </span>
+        </NavLeft>
         <NavTitle>
           <Segmented strong className="op-seg">
             <Button active={view === 'map'} onClick={() => setView('map')}>
@@ -127,18 +128,6 @@ export default function Home() {
             onSelect={setSelectedId}
           />
 
-          <div className="op-map-top">
-            <span className="op-count-pill">
-              {filtered.length} {filtered.length === 1 ? 'machine' : 'machines'}
-              {!live && <span className="op-sample-tag">sample</span>}
-            </span>
-          </div>
-
-          <button className="op-locate" onClick={geo.request} type="button">
-            <Icon f7="location_fill" />
-            <span>{locateLabel}</span>
-          </button>
-
           {selectedId && (
             <SelectedCard
               machine={filtered.find((m) => m.assetId === selectedId) ?? null}
@@ -150,14 +139,7 @@ export default function Home() {
         <div className="page-content op-list-content">
           {!live && (
             <Block className="op-sample-banner">
-              Showing sample machines — connect your fleet to see live data.
-            </Block>
-          )}
-          {geo.status === 'idle' && (
-            <Block>
-              <Button small round onClick={geo.request}>
-                <Icon f7="location" size={16} /> &nbsp;Sort by nearest
-              </Button>
+              Showing sample assets — connect your fleet to see live data.
             </Block>
           )}
           <List dividersIos mediaList strongIos outlineIos className="op-machine-list">
@@ -165,7 +147,7 @@ export default function Home() {
               <MachineListItem key={m.assetId} machine={m} onClick={() => setSelectedId(m.assetId)} />
             ))}
           </List>
-          {filtered.length === 0 && <Block className="op-muted">No machines match your filters.</Block>}
+          {filtered.length === 0 && <Block className="op-muted">No assets match your filters.</Block>}
         </div>
       )}
 
