@@ -730,48 +730,46 @@ body,
 }
 
 /* =========================================================================
-   Check-in sheet (swipe-to-step) — sits UNDER the floating tabbar
+   Check-in sheet (standard solid sheet) + global checked-in bar
    ========================================================================= */
 
-/* The sheet container is transparent + click-through; only the inner cards are
-   solid. The card body stops above the floating tabbar, so the tabbar (which
-   lives in a lower stacking context) shows through and stays tappable. */
-.op-checkin-sheet.sheet-modal {
-  z-index: 13000;
-  background: transparent;
-  box-shadow: none;
-  pointer-events: none;
-  /* No frosted blur over the transparent area — the tabbar must show crisply. */
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+/* The tabbar lives at the app root (not inside a view), so F7 no longer
+   positions it — pin it to the bottom ourselves, above the sheet. */
+.tabbar-phone {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 13600;
 }
-.op-checkin-sheet .sheet-modal-inner {
-  background: transparent;
-}
-.op-ci-card {
-  pointer-events: auto;
-  background: var(--f7-bars-bg-color);
-}
-.op-ci-card-top {
-  border-radius: var(--f7-sheet-border-radius) var(--f7-sheet-border-radius) 0 0;
-  box-shadow: 0 -8px 30px rgba(15, 23, 42, 0.18);
-  padding: 0 16px 12px;
-}
-.ios.dark .op-ci-card-top {
-  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.5);
-}
-.op-ci-card-bottom {
-  padding: 4px 16px 18px;
+/* F7 reserved tabbar space when the toolbar was inside the views; now it's at
+   root, so give tab pages their own bottom clearance. */
+@media (max-width: 767px) {
+  .ios .page-content {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 84px);
+  }
 }
 
-/* Collapsed: transparent clearance below the card so it floats above the
-   tabbar. Removed when expanded so the step + extra cards stay flush. */
-.op-checkin-sheet:not(.op-ci-expanded) .op-ci-step {
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+/* Standard solid bottom sheet. Its content clears the floating tabbar (which
+   sits on top), so the card's bottom simply tucks behind it — no transparent
+   regions, no hole, collapsed or expanded. */
+.op-checkin-sheet.sheet-modal {
+  z-index: 13000;
+  background: var(--f7-bars-bg-color);
+  border-radius: var(--f7-sheet-border-radius) var(--f7-sheet-border-radius) 0 0;
+  box-shadow: 0 -8px 30px rgba(15, 23, 42, 0.18);
 }
-/* Expanded: keep the last actions clear of the tabbar. */
-.op-checkin-sheet.op-ci-expanded .op-ci-extra {
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+.ios.dark .op-checkin-sheet.sheet-modal {
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.5);
+}
+.op-ci-card {
+  padding: 0 16px;
+  /* Clear the floating tabbar so the last action stays above it. */
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
+  /* Scroll if the expanded content is taller than the screen (small phones). */
+  max-height: 86vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .op-ci-grip {
@@ -856,12 +854,15 @@ body,
   margin-top: 14px;
 }
 
-/* --- Inspections (expanded) --- */
+/* --- Inspections (revealed on Check in) --- */
+.op-ci-inspections {
+  margin-top: 18px;
+}
 .op-ci-extra-title {
   font-size: 13px;
   font-weight: 600;
   color: var(--f7-text-color-secondary, #8e8e93);
-  margin: 4px 2px 10px;
+  margin: 0 2px 10px;
 }
 .op-ci-insp {
   display: flex;
@@ -910,15 +911,7 @@ body,
   margin-top: 2px;
 }
 
-/* --- Minimised checked-in bar --- */
-.op-ci-bar-step {
-  padding-bottom: 14px;
-}
-.op-ci-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+/* --- Global checked-in bar --- */
 .op-ci-bar-main {
   min-width: 0;
   flex: 1;
@@ -926,12 +919,14 @@ body,
 .op-ci-bar-top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
 }
 .op-ci-checked {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
+  white-space: nowrap;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -950,7 +945,7 @@ body,
 }
 .op-ci-timer {
   font-variant-numeric: tabular-nums;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
 }
 .op-ci-bar-name {
@@ -966,21 +961,20 @@ body,
   font-weight: 400;
 }
 
-/* Checked-in minimised bar — floats just above the tabbar. */
+/* Floats just above the tabbar, in every tab (rendered at the app root). */
 .op-ci-fixed-bar {
   position: fixed;
   left: 8px;
   right: 8px;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
-  z-index: 2500;
+  z-index: 13400;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
+  padding: 10px 12px;
   background: var(--f7-bars-bg-color);
   border-radius: 18px;
   box-shadow: 0 6px 24px rgba(15, 23, 42, 0.2);
-  cursor: pointer;
   animation: op-ci-bar-in 0.25s ease;
 }
 .ios.dark .op-ci-fixed-bar {
@@ -995,4 +989,16 @@ body,
     transform: translateY(0);
     opacity: 1;
   }
+}
+.op-ci-checkout-btn {
+  flex: 0 0 auto;
+  width: max-content;
+  border: none;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  cursor: pointer;
 }

@@ -20,9 +20,11 @@ import Framework7React from 'framework7-react';
 
 import routes from './routes';
 import { AuthProvider, useAuth } from './lib/useAuth';
+import { CheckInProvider } from './lib/useCheckIn';
 import { resolveInitialDark } from './lib/theme';
 import Login from './pages/Login';
 import ReloadPrompt from './components/ReloadPrompt';
+import CheckedInBar from './components/CheckedInBar';
 
 Framework7.use(Framework7React);
 
@@ -70,7 +72,9 @@ const f7params = {
 export default function App() {
   return (
     <AuthProvider>
-      <Shell />
+      <CheckInProvider>
+        <Shell />
+      </CheckInProvider>
     </AuthProvider>
   );
 }
@@ -126,6 +130,18 @@ function Shell() {
 
       {/* Remount views (and refetch) when the signed-in user changes. */}
       <Views key={session?.user?.id ?? 'anon'} tabs className="safe-areas">
+        <View id="view-home" main tab tabActive url="/" />
+        <View id="view-log" tab url="/log/" />
+        <View id="view-inbox" tab url="/inbox/" />
+        <View id="view-profile" tab url="/profile/" />
+      </Views>
+
+      {/* Persistent "checked in" bar — floats above the tabbar, in every tab. */}
+      {loggedIn && <CheckedInBar />}
+
+      {/* Bottom tabbar lives at the app root (not inside Views) so it can sit
+          above the check-in sheet + bar with a normal z-index. */}
+      {loggedIn && (
         <Toolbar tabbar icons bottom className="tabbar-phone">
           <ToolbarPane>
             {TABS.map((t, i) => (
@@ -139,12 +155,7 @@ function Shell() {
             ))}
           </ToolbarPane>
         </Toolbar>
-
-        <View id="view-home" main tab tabActive url="/" />
-        <View id="view-log" tab url="/log/" />
-        <View id="view-inbox" tab url="/inbox/" />
-        <View id="view-profile" tab url="/profile/" />
-      </Views>
+      )}
 
       {/* Splash while we resolve the initial session. */}
       {loading && (

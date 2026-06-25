@@ -15,7 +15,7 @@ import {
 } from 'framework7-react';
 import LeafletMap from '../components/LeafletMap';
 import MachineListItem from '../components/MachineListItem';
-import CheckInSheet, { type CheckInState } from '../components/CheckInSheet';
+import CheckInSheet from '../components/CheckInSheet';
 import FilterSheet, {
   EMPTY_FILTERS,
   filtersActive,
@@ -23,6 +23,7 @@ import FilterSheet, {
 } from '../components/FilterSheet';
 import { fetchFleet } from '../data/machines';
 import { useGeolocation, haversineKm } from '../lib/geo';
+import { useCheckIn } from '../lib/useCheckIn';
 import type { Asset, FleetMachine } from '../types';
 
 type ViewMode = 'map' | 'list';
@@ -33,11 +34,11 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<ViewMode>('map');
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [checkIn, setCheckIn] = useState<CheckInState | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
 
   const geo = useGeolocation();
+  const { checkIn } = useCheckIn();
 
   useEffect(() => {
     let cancelled = false;
@@ -93,12 +94,6 @@ export default function Home() {
   const selectedMachine = selectedId
     ? filtered.find((m) => m.assetId === selectedId) ?? null
     : null;
-
-  const doCheckIn = (m: FleetMachine) => {
-    setCheckIn({ machine: m, startedAt: Date.now() });
-    setSelectedId(null);
-  };
-  const doCheckOut = () => setCheckIn(null);
 
   return (
     <Page name="home" pageContent={false}>
@@ -166,9 +161,6 @@ export default function Home() {
 
       <CheckInSheet
         machine={checkIn ? null : selectedMachine}
-        checkIn={checkIn}
-        onCheckIn={doCheckIn}
-        onCheckOut={doCheckOut}
         onClose={() => setSelectedId(null)}
       />
     </Page>
