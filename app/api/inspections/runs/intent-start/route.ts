@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { resolveApiSession, ApiAuthError, corsHeaders, corsPreflight } from '@/lib/apiSession';
+import {
+  resolveApiSession,
+  resolveAccountForMachine,
+  ApiAuthError,
+  corsHeaders,
+  corsPreflight,
+} from '@/lib/apiSession';
 import { getMachine } from '@/lib/machines';
 import { getSite } from '@/lib/sites';
 import { getTemplate } from '@/lib/inspections/repo';
@@ -43,9 +49,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'templateId, machineId required' }, { status: 400, headers: cors });
   }
 
+  // Resolve the account from the machine itself (the operator may be in several).
+  const accountId = (await resolveAccountForMachine(ctx.userId, machineId)) ?? ctx.accountId;
+
   const [machine, template] = await Promise.all([
-    getMachine(machineId, ctx.accountId),
-    getTemplate(ctx.accountId, templateId),
+    getMachine(machineId, accountId),
+    getTemplate(accountId, templateId),
   ]);
   if (!machine) return NextResponse.json({ error: 'Machine not found' }, { status: 404, headers: cors });
   if (!template) return NextResponse.json({ error: 'Template not found' }, { status: 404, headers: cors });
@@ -54,8 +63,8 @@ export async function POST(req: NextRequest) {
   }
 
   const [lastRun, site] = await Promise.all([
-    getLastCompletedRun(ctx.accountId, machine.id, templateId),
-    machine.siteId ? getSite(machine.siteId, ctx.accountId) : Promise.resolve(null),
+    getLastCompletedRun(accountId, machine.id, templateId),
+    machine.siteId ? getSite(machine.siteId, accountId) : Promise.resolve(null),
   ]);
   const preflightInputs: PreflightInputs = buildPreflightInputs(
     machine,
@@ -66,7 +75,7 @@ export async function POST(req: NextRequest) {
 
   const snap = machine.lastSnapshot;
   const { id } = await startIntentRun({
-    accountId: ctx.accountId,
+    accountId,
     templateId,
     machineId,
     operatorId: ctx.userId,

@@ -63,6 +63,35 @@ export async function resolveApiSession(req: NextRequest): Promise<ApiSession> {
   return { userId: ctx.userId, accountId: ctx.accountId };
 }
 
+/**
+ * Authoritatively resolve which account a machine belongs to, *verifying* the
+ * caller is a member of that account. Returns null if the machine doesn't exist
+ * or the user isn't a member. This sidesteps the multi-account ambiguity in
+ * resolveApiSession (the operator may belong to several accounts, and the
+ * machine's own account is the only correct one for getMachine/getTemplate).
+ */
+export async function resolveAccountForMachine(
+  userId: string,
+  machineId: string
+): Promise<string | null> {
+  const admin = createSupabaseAdminClient();
+  const { data: machine } = await admin
+    .from('machines')
+    .select('account_id')
+    .eq('id', machineId)
+    .maybeSingle();
+  const acct = (machine as { account_id: string } | null)?.account_id;
+  if (!acct) return null;
+
+  const { data: member } = await admin
+    .from('account_members')
+    .select('account_id')
+    .eq('user_id', userId)
+    .eq('account_id', acct)
+    .maybeSingle();
+  return member ? acct : null;
+}
+
 // ─── CORS ───────────────────────────────────────────────────────────────────
 // The mobile operator app runs on its own dev origin (Vite, :5180) and in
 // preview tooling, so cross-origin POSTs need explicit CORS. Secrets stay

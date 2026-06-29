@@ -1,5 +1,11 @@
 import { NextRequest } from 'next/server';
-import { resolveApiSession, ApiAuthError, corsHeaders, corsPreflight } from '@/lib/apiSession';
+import {
+  resolveApiSession,
+  resolveAccountForMachine,
+  ApiAuthError,
+  corsHeaders,
+  corsPreflight,
+} from '@/lib/apiSession';
 import { getMachine } from '@/lib/machines';
 import { getSite } from '@/lib/sites';
 import { getTemplate } from '@/lib/inspections/repo';
@@ -55,7 +61,12 @@ export async function POST(req: NextRequest) {
     return new Response('Invalid body', { status: 400, headers: cors });
   }
 
-  const tpl = await getTemplate(ctx.accountId, templateId);
+  // Resolve the account from the machine itself (the operator may be in several).
+  const accountId = machine?.id
+    ? (await resolveAccountForMachine(ctx.userId, machine.id)) ?? ctx.accountId
+    : ctx.accountId;
+
+  const tpl = await getTemplate(accountId, templateId);
   if (!tpl) return new Response('Not found', { status: 404, headers: cors });
   if (tpl.kind !== 'intent' || !tpl.yaml_body) {
     return new Response('Template is missing a YAML body', { status: 400, headers: cors });
@@ -65,11 +76,11 @@ export async function POST(req: NextRequest) {
   // Cheap (a couple of indexed queries) and freshens between turns automatically.
   let preflightInputs = null;
   if (machine?.id) {
-    const machineRow = await getMachine(machine.id, ctx.accountId);
+    const machineRow = await getMachine(machine.id, accountId);
     if (machineRow) {
       const [lastRun, site] = await Promise.all([
-        getLastCompletedRun(ctx.accountId, machineRow.id, templateId),
-        machineRow.siteId ? getSite(machineRow.siteId, ctx.accountId) : Promise.resolve(null),
+        getLastCompletedRun(accountId, machineRow.id, templateId),
+        machineRow.siteId ? getSite(machineRow.siteId, accountId) : Promise.resolve(null),
       ]);
       preflightInputs = buildPreflightInputs(
         machineRow,
@@ -209,9 +220,9 @@ export async function POST(req: NextRequest) {
               });
             }
             // Belt-and-braces: confirm the run still belongs to this account.
-            const existing = await getIntentRun(ctx.accountId, runId);
+            const existing = await getIntentRun(accountId, runId);
             if (existing) {
-              await completeIntentRun(ctx.accountId, runId, {
+              await completeIntentRun(accountId, runId, {
                 transcript,
                 summary,
                 findings,
