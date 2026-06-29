@@ -5,15 +5,21 @@ export interface Filters {
   range: number; // km; 0 = any
   types: string[]; // empty = all
   statuses: ActivityState[]; // empty = all
+  accounts: string[]; // selected account ids; empty = all
 }
 
-export const EMPTY_FILTERS: Filters = { range: 0, types: [], statuses: [] };
+export const EMPTY_FILTERS: Filters = { range: 0, types: [], statuses: [], accounts: [] };
 
 export function filtersActive(f: Filters): boolean {
-  return f.range > 0 || f.types.length > 0 || f.statuses.length > 0;
+  return f.range > 0 || f.types.length > 0 || f.statuses.length > 0 || f.accounts.length > 0;
 }
 
 const STATUSES: ActivityState[] = ['WORKING', 'IDLING', 'STOPPED', 'UNKNOWN'];
+
+export interface CompanyOption {
+  id: string;
+  name: string;
+}
 
 interface Props {
   opened: boolean;
@@ -21,6 +27,7 @@ interface Props {
   filters: Filters;
   setFilters: (f: Filters) => void;
   availableTypes: string[];
+  availableCompanies: CompanyOption[];
 }
 
 export default function FilterSheet({
@@ -29,6 +36,7 @@ export default function FilterSheet({
   filters,
   setFilters,
   availableTypes,
+  availableCompanies,
 }: Props) {
   const toggleType = (t: string) =>
     setFilters({
@@ -36,6 +44,14 @@ export default function FilterSheet({
       types: filters.types.includes(t)
         ? filters.types.filter((x) => x !== t)
         : [...filters.types, t],
+    });
+
+  const toggleAccount = (id: string) =>
+    setFilters({
+      ...filters,
+      accounts: filters.accounts.includes(id)
+        ? filters.accounts.filter((x) => x !== id)
+        : [...filters.accounts, id],
     });
 
   const toggleStatus = (s: ActivityState) =>
@@ -57,6 +73,26 @@ export default function FilterSheet({
       <PageContent>
         <div className="op-sheet-grip" />
         <BlockTitle large>Filter</BlockTitle>
+
+        {availableCompanies.length > 1 && (
+          <>
+            <BlockTitle>Company</BlockTitle>
+            <Block strong inset>
+              <div className="op-chips">
+                {availableCompanies.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className={`op-chip${filters.accounts.includes(c.id) ? ' op-chip-active' : ''}`}
+                    onClick={() => toggleAccount(c.id)}
+                  >
+                    {c.name}
+                  </button>
+                ))}
+              </div>
+            </Block>
+          </>
+        )}
 
         <BlockTitle>Range</BlockTitle>
         <Block strong inset>

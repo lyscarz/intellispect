@@ -19,6 +19,8 @@ export interface Asset {
   /** Owning Supabase account — used to scope inspection API calls correctly
    *  when the operator belongs to more than one account. */
   accountId: string | null;
+  /** Owning account's display name — powers the company filter. */
+  accountName: string | null;
   name: string;
   brand: string | null;
   model: string | null;

@@ -87,9 +87,21 @@ export default function Home() {
     [assets]
   );
 
+  const availableCompanies = useMemo(() => {
+    const byId = new Map<string, string>();
+    for (const a of assets) {
+      if (a.accountId) byId.set(a.accountId, a.accountName ?? 'Company');
+    }
+    return Array.from(byId, ([id, name]) => ({ id, name })).sort((x, y) =>
+      x.name.localeCompare(y.name)
+    );
+  }, [assets]);
+
   const filtered = useMemo(
     () =>
       enriched.filter((m) => {
+        if (filters.accounts.length && !(m.accountId && filters.accounts.includes(m.accountId)))
+          return false;
         if (filters.statuses.length && !filters.statuses.includes(m.activity ?? 'UNKNOWN'))
           return false;
         if (filters.types.length && !filters.types.includes(m.assetType)) return false;
@@ -181,6 +193,7 @@ export default function Home() {
         filters={filters}
         setFilters={setFilters}
         availableTypes={availableTypes}
+        availableCompanies={availableCompanies}
       />
 
       <CheckInSheet
