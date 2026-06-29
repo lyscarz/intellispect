@@ -27,8 +27,8 @@ export default function Inbox() {
 
   return (
     <Page name="inbox">
-      <Navbar large>
-        <NavTitle large>Inbox</NavTitle>
+      <Navbar>
+        <NavTitle>Inbox</NavTitle>
         <NavRight>{unread > 0 && <span className="op-unread-count">{unread}</span>}</NavRight>
       </Navbar>
 

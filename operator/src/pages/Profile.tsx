@@ -81,8 +81,8 @@ export default function Profile() {
 
   return (
     <Page name="profile">
-      <Navbar large>
-        <NavTitle large>Profile</NavTitle>
+      <Navbar>
+        <NavTitle>Profile</NavTitle>
       </Navbar>
 
       {/* Header */}

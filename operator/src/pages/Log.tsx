@@ -68,8 +68,8 @@ export default function Log() {
 
   return (
     <Page name="log">
-      <Navbar large>
-        <NavTitle large>Log</NavTitle>
+      <Navbar>
+        <NavTitle>Log</NavTitle>
       </Navbar>
 
       <BlockTitle>My sessions</BlockTitle>
