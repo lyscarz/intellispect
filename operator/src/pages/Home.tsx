@@ -38,7 +38,13 @@ export default function Home() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
-  const [selectedInspection, setSelectedInspection] = useState<InspectionTemplate | null>(null);
+  // Capture the machine *with* the chosen inspection — selecting one closes the
+  // check-in sheet (which clears selectedId/selectedMachine), so the popup can't
+  // rely on selectedMachine or it would vanish as the sheet animates closed.
+  const [inspection, setInspection] = useState<{
+    template: InspectionTemplate;
+    machine: FleetMachine;
+  } | null>(null);
 
   const geo = useGeolocation();
   const { checkIn, checkInTo } = useCheckIn();
@@ -178,18 +184,20 @@ export default function Home() {
       />
 
       <CheckInSheet
-        machine={checkIn || selectedInspection ? null : selectedMachine}
+        machine={checkIn || inspection ? null : selectedMachine}
         onClose={() => setSelectedId(null)}
-        onSelectInspection={(t) => setSelectedInspection(t)}
+        onSelectInspection={(t) =>
+          selectedMachine && setInspection({ template: t, machine: selectedMachine })
+        }
       />
 
       <InspectionPopup
-        template={selectedInspection}
-        machine={selectedMachine}
-        onClose={() => setSelectedInspection(null)}
+        template={inspection?.template ?? null}
+        machine={inspection?.machine ?? null}
+        onClose={() => setInspection(null)}
         onComplete={() => {
-          if (selectedMachine) checkInTo(selectedMachine);
-          setSelectedInspection(null);
+          if (inspection) checkInTo(inspection.machine);
+          setInspection(null);
           setSelectedId(null);
         }}
       />
