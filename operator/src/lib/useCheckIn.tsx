@@ -17,12 +17,16 @@ interface CheckInContextValue {
   checkIn: CheckInState | null;
   checkInTo: (machine: FleetMachine) => void;
   checkOut: () => void;
+  /** Bumps whenever a session is written (checkout), so views like the Log can
+   *  refetch live without a manual reload. */
+  sessionsVersion: number;
 }
 
 const CheckInContext = createContext<CheckInContextValue>({
   checkIn: null,
   checkInTo: () => {},
   checkOut: () => {},
+  sessionsVersion: 0,
 });
 
 const KEY = 'operator-checkin';
@@ -41,6 +45,7 @@ function load(): CheckInState | null {
 
 export function CheckInProvider({ children }: { children: ReactNode }) {
   const [checkIn, setCheckIn] = useState<CheckInState | null>(() => load());
+  const [sessionsVersion, setSessionsVersion] = useState(0);
 
   // Persist so the session (and its timer) survive a reload.
   useEffect(() => {
@@ -54,13 +59,19 @@ export function CheckInProvider({ children }: { children: ReactNode }) {
 
   const checkInTo = (machine: FleetMachine) => setCheckIn({ machine, startedAt: Date.now() });
   const checkOut = () => {
-    // Persist the completed session to Supabase (best-effort) before clearing.
-    if (checkIn) void saveSession(checkIn.machine, checkIn.startedAt, Date.now());
+    const ci = checkIn;
+    // Clear immediately for a snappy UI, then persist to Supabase and bump the
+    // version so the Log refetches the new session live (no reload needed).
     setCheckIn(null);
+    if (ci) {
+      saveSession(ci.machine, ci.startedAt, Date.now()).finally(() =>
+        setSessionsVersion((v) => v + 1)
+      );
+    }
   };
 
   return (
-    <CheckInContext.Provider value={{ checkIn, checkInTo, checkOut }}>
+    <CheckInContext.Provider value={{ checkIn, checkInTo, checkOut, sessionsVersion }}>
       {children}
     </CheckInContext.Provider>
   );

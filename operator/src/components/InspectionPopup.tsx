@@ -24,7 +24,6 @@ export default function InspectionPopup({
   return (
     <Popup
       className={`op-insp-popup${isAi ? ' op-insp-popup-chat' : ''}`}
-      push
       opened={opened}
       onPopupClosed={onClose}
     >

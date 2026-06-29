@@ -3,6 +3,7 @@ import { Page, Navbar, NavTitle, BlockTitle, List, Block, Preloader } from 'fram
 import { SAMPLE_SESSIONS } from '../lib/sampleData';
 import { listMySessions } from '../lib/sessions';
 import { brandColors, assetInitials } from '../lib/format';
+import { useCheckIn } from '../lib/useCheckIn';
 
 interface LogRow {
   id: string;
@@ -26,6 +27,7 @@ function pct(v: number, total: number) {
 export default function Log() {
   const [rows, setRows] = useState<LogRow[] | null>(null); // null = loading
   const [live, setLive] = useState(false);
+  const { sessionsVersion } = useCheckIn();
 
   useEffect(() => {
     let cancelled = false;
@@ -64,7 +66,7 @@ export default function Log() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [sessionsVersion]);
 
   return (
     <Page name="log">
