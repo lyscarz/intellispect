@@ -602,6 +602,38 @@ body,
   background: rgba(120, 120, 128, 0.4);
   margin: 8px auto 0;
 }
+
+/* Tall filter sheet that fills most of the screen, sits ABOVE the floating
+   tabbar, and keeps its grip + title fixed while the content scrolls. */
+.op-filter-sheet.sheet-modal {
+  height: 92vh;
+  display: flex;
+  flex-direction: column;
+  z-index: 13700;
+  border-radius: var(--f7-sheet-border-radius) var(--f7-sheet-border-radius) 0 0;
+  overflow: hidden;
+}
+.op-filter-sheet .op-sheet-header {
+  flex-shrink: 0;
+  padding: 0 16px 6px;
+  background: var(--f7-page-bg-color);
+}
+.op-filter-sheet .op-sheet-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin-top: 8px;
+}
+.op-filter-sheet .page-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+}
+/* Sheet backdrops sit above the floating tabbar (z 13600) so modals cover it. */
+.sheet-backdrop {
+  z-index: 13690;
+}
 .op-range-label {
   font-weight: 600;
   margin-bottom: 4px;

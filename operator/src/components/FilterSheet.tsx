@@ -70,10 +70,12 @@ export default function FilterSheet({
       swipeToClose
       backdrop
     >
-      <PageContent>
+      {/* Fixed header (outside the scroll area) so the grip + title stay put. */}
+      <div className="op-sheet-header">
         <div className="op-sheet-grip" />
-        <BlockTitle large>Filter</BlockTitle>
-
+        <div className="op-sheet-title">Filter</div>
+      </div>
+      <PageContent>
         {availableCompanies.length > 1 && (
           <>
             <BlockTitle>Company</BlockTitle>
