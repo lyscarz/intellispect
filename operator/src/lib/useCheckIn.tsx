@@ -6,6 +6,7 @@ import React, {
   type ReactNode,
 } from 'react';
 import type { FleetMachine } from '../types';
+import { saveSession } from './sessions';
 
 export interface CheckInState {
   machine: FleetMachine;
@@ -52,7 +53,11 @@ export function CheckInProvider({ children }: { children: ReactNode }) {
   }, [checkIn]);
 
   const checkInTo = (machine: FleetMachine) => setCheckIn({ machine, startedAt: Date.now() });
-  const checkOut = () => setCheckIn(null);
+  const checkOut = () => {
+    // Persist the completed session to Supabase (best-effort) before clearing.
+    if (checkIn) void saveSession(checkIn.machine, checkIn.startedAt, Date.now());
+    setCheckIn(null);
+  };
 
   return (
     <CheckInContext.Provider value={{ checkIn, checkInTo, checkOut }}>

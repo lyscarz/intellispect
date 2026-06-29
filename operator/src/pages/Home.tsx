@@ -99,10 +99,12 @@ export default function Home() {
     <Page name="home" pageContent={false}>
       <Navbar className={view === 'map' ? 'op-map-navbar' : undefined}>
         <NavLeft>
-          <span className="op-count-pill">
-            {filtered.length} {filtered.length === 1 ? 'asset' : 'assets'}
-            {!live && <span className="op-sample-tag">sample</span>}
-          </span>
+          {!loading && (
+            <span className="op-count-pill">
+              {filtered.length} {filtered.length === 1 ? 'asset' : 'assets'}
+              {!live && <span className="op-sample-tag">sample</span>}
+            </span>
+          )}
         </NavLeft>
         <NavTitle>
           <Segmented strong className="op-seg">
@@ -122,11 +124,7 @@ export default function Home() {
         </NavRight>
       </Navbar>
 
-      {loading ? (
-        <div className="op-center">
-          <Preloader />
-        </div>
-      ) : view === 'map' ? (
+      {view === 'map' ? (
         <div className="op-fullmap">
           <LeafletMap
             machines={filtered}
@@ -134,20 +132,37 @@ export default function Home() {
             selectedId={selectedId}
             onSelect={setSelectedId}
           />
+          {loading && (
+            <div className="op-map-loading">
+              <Preloader />
+              <span>Loading assets…</span>
+            </div>
+          )}
         </div>
       ) : (
         <div className="page-content op-list-content">
-          {!live && (
-            <Block className="op-sample-banner">
-              Showing sample assets — connect your fleet to see live data.
-            </Block>
+          {loading ? (
+            <div className="op-list-loading">
+              <Preloader />
+              <span>Loading assets…</span>
+            </div>
+          ) : (
+            <>
+              {!live && (
+                <Block className="op-sample-banner">
+                  Showing sample assets — connect your fleet to see live data.
+                </Block>
+              )}
+              <List dividersIos mediaList strongIos outlineIos className="op-machine-list">
+                {filtered.map((m) => (
+                  <MachineListItem key={m.assetId} machine={m} onClick={() => setSelectedId(m.assetId)} />
+                ))}
+              </List>
+              {filtered.length === 0 && (
+                <Block className="op-muted">No assets match your filters.</Block>
+              )}
+            </>
           )}
-          <List dividersIos mediaList strongIos outlineIos className="op-machine-list">
-            {filtered.map((m) => (
-              <MachineListItem key={m.assetId} machine={m} onClick={() => setSelectedId(m.assetId)} />
-            ))}
-          </List>
-          {filtered.length === 0 && <Block className="op-muted">No assets match your filters.</Block>}
         </div>
       )}
 
