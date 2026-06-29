@@ -1,12 +1,4 @@
-import {
-  Popup,
-  Page,
-  Navbar,
-  NavLeft,
-  NavTitle,
-  NavTitleLarge,
-  Link,
-} from 'framework7-react';
+import { Popup, Page, Navbar, NavLeft, NavTitle, Link } from 'framework7-react';
 import InspectionFormRunner from './InspectionFormRunner';
 import InspectionChatRunner from './InspectionChatRunner';
 import { Thumb } from './ciShared';
@@ -31,7 +23,7 @@ export default function InspectionPopup({
 
   return (
     <Popup
-      className="op-insp-popup"
+      className={`op-insp-popup${isAi ? ' op-insp-popup-chat' : ''}`}
       push
       opened={opened}
       onPopupClosed={onClose}
@@ -42,7 +34,6 @@ export default function InspectionPopup({
             <Link popupClose iconF7="xmark" />
           </NavLeft>
           <NavTitle>{isAi ? 'AI inspection' : 'Inspection'}</NavTitle>
-          <NavTitleLarge>{isAi ? 'AI inspection' : 'Inspection'}</NavTitleLarge>
         </Navbar>
 
         {template && machine && (

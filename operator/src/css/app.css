@@ -1040,15 +1040,28 @@ body,
    Inspection popup (push) — runs a form checklist OR the AI chat inspection
    ========================================================================= */
 
-/* Sit above the check-in sheet (13000) and bar (13400); below the tabbar. */
+/* Full-screen task — sit ABOVE the tabbar (13600), sheet (13000) and bar (13400)
+   so nothing covers the chat input. */
 .op-insp-popup.popup {
-  z-index: 13500;
+  z-index: 13700;
 }
 .op-insp-page {
   background: var(--f7-page-bg-color);
 }
 .op-insp-navbar .navbar-inner {
   background: var(--f7-bars-bg-color);
+}
+
+/* Chat variant: make the page-content a fixed-height flex column so the message
+   list scrolls internally and the input row stays pinned + visible. */
+.op-insp-popup-chat .page-content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+.op-insp-popup-chat .op-insp-machine {
+  flex-shrink: 0;
 }
 
 /* Loading + empty states inside the check-in sheet's inspection list. */
@@ -1320,11 +1333,12 @@ body,
 }
 
 /* --- AI chat runner --- */
+/* Fills the flex column page-content; messages scroll, input stays pinned. */
 .op-chat {
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  height: calc(100% - 0px);
-  min-height: 0;
 }
 .op-chat-messages {
   flex: 1;
@@ -1398,19 +1412,26 @@ body,
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
   padding: 10px 12px calc(env(safe-area-inset-bottom, 0px) + 10px);
   border-top: 1px solid rgba(120, 120, 128, 0.18);
   background: var(--f7-bars-bg-color);
 }
 .op-chat-input input {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
-  padding: 11px 15px;
+  width: 100%;
+  height: 42px;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 0 16px;
   border-radius: 999px;
   border: 1px solid rgba(120, 120, 128, 0.3);
   background: var(--f7-page-bg-color);
   color: var(--f7-text-color);
-  font-size: 15px;
+  font-size: 16px;
   font-family: inherit;
   outline: none;
 }
