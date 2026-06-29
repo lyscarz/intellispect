@@ -4,6 +4,7 @@ import { SAMPLE_FLEET } from '../lib/sampleData';
 
 interface MachineRow {
   id: string;
+  account_id: string | null;
   name: string;
   brand: string | null;
   model: string | null;
@@ -17,6 +18,7 @@ function rowToAsset(r: MachineRow): Asset {
   const snap = r.last_snapshot;
   return {
     assetId: r.id,
+    accountId: r.account_id,
     name: r.name,
     brand: r.brand,
     model: r.model,
@@ -46,7 +48,7 @@ export async function fetchFleet(): Promise<{ assets: Asset[]; live: boolean }> 
   try {
     const { data, error } = await supabase
       .from('machines')
-      .select('id,name,brand,model,serial_number,status,last_snapshot')
+      .select('id,account_id,name,brand,model,serial_number,status,last_snapshot')
       .limit(500);
     if (error) throw error;
 

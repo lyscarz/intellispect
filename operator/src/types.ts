@@ -16,6 +16,9 @@ export interface AssetInsights {
 
 export interface Asset {
   assetId: string;
+  /** Owning Supabase account — used to scope inspection API calls correctly
+   *  when the operator belongs to more than one account. */
+  accountId: string | null;
   name: string;
   brand: string | null;
   model: string | null;

@@ -137,7 +137,9 @@ export async function submitFormResponse(
   const { data, error } = await supabase
     .from('inspection_responses')
     .insert({
-      account_id: template.account_id,
+      // Scope to the machine's account so the FK + RLS line up even when the
+      // operator belongs to multiple accounts.
+      account_id: machine.accountId ?? template.account_id,
       template_id: template.id,
       template_snapshot: schema,
       machine_id: machine.assetId,
@@ -156,13 +158,17 @@ export async function submitFormResponse(
   return { id: (data as { id: string }).id, outcome };
 }
 
-async function authHeaders(): Promise<Record<string, string>> {
+async function authHeaders(machine?: FleetMachine): Promise<Record<string, string>> {
   const {
     data: { session },
   } = await supabase.auth.getSession();
   const token = session?.access_token;
   if (!token) throw new Error('Not signed in');
-  return { Authorization: `Bearer ${token}` };
+  const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+  // Tell the backend which account to act in — the operator may belong to
+  // several, and the machine's account is the authoritative one.
+  if (machine?.accountId) headers['x-account-id'] = machine.accountId;
+  return headers;
 }
 
 /** Start a server-side intent run (preflight + persisted row). Returns its id. */
@@ -172,7 +178,7 @@ export async function startIntentRun(
 ): Promise<{ runId: string }> {
   const res = await fetch(`${API_BASE}/api/inspections/runs/intent-start`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders(machine)) },
     body: JSON.stringify({ templateId: template.id, machineId: machine.assetId }),
   });
   if (!res.ok) {
@@ -200,6 +206,6 @@ export async function streamIntent(
     `${API_BASE}/api/inspections/run-intent`,
     { templateId: template.id, messages, machine: machineContext(machine), runId },
     onEvent,
-    await authHeaders()
+    await authHeaders(machine)
   );
 }

@@ -22,6 +22,7 @@ function asset(
 ): Asset {
   return {
     assetId: id,
+    accountId: null,
     name,
     brand,
     model,
