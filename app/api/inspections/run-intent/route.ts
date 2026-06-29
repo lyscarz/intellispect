@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getSessionContext } from '@/lib/getSessionContext';
+import { resolveApiSession, ApiAuthError, corsHeaders, corsPreflight } from '@/lib/apiSession';
 import { getMachine } from '@/lib/machines';
 import { getSite } from '@/lib/sites';
 import { getTemplate } from '@/lib/inspections/repo';
@@ -34,18 +34,31 @@ function sse(event: string, data: unknown): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
+export function OPTIONS(req: NextRequest) {
+  return corsPreflight(req);
+}
+
 export async function POST(req: NextRequest) {
-  const ctx = await getSessionContext();
+  const cors = corsHeaders(req.headers.get('origin'));
+  let ctx;
+  try {
+    ctx = await resolveApiSession(req);
+  } catch (e) {
+    if (e instanceof ApiAuthError) {
+      return new Response(e.message, { status: e.status, headers: cors });
+    }
+    throw e;
+  }
   const { templateId, messages, machine, runId } = (await req.json()) as Body;
 
   if (!templateId || !Array.isArray(messages)) {
-    return new Response('Invalid body', { status: 400 });
+    return new Response('Invalid body', { status: 400, headers: cors });
   }
 
   const tpl = await getTemplate(ctx.accountId, templateId);
-  if (!tpl) return new Response('Not found', { status: 404 });
+  if (!tpl) return new Response('Not found', { status: 404, headers: cors });
   if (tpl.kind !== 'intent' || !tpl.yaml_body) {
-    return new Response('Template is missing a YAML body', { status: 400 });
+    return new Response('Template is missing a YAML body', { status: 400, headers: cors });
   }
 
   // Gather PreflightInputs so the AI can reason about machine state + history.
@@ -230,6 +243,7 @@ export async function POST(req: NextRequest) {
 
   return new Response(stream, {
     headers: {
+      ...cors,
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-transform',
       Connection: 'keep-alive',

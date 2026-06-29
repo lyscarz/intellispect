@@ -1,45 +1,59 @@
 import { useEffect, useState } from 'react';
-import { Sheet, Icon } from 'framework7-react';
+import { Sheet, Icon, Preloader } from 'framework7-react';
 import type { FleetMachine } from '../types';
+import type { InspectionTemplate } from '../lib/inspectionTypes';
 import StatusBadge from './StatusBadge';
 import { Thumb } from './ciShared';
 import { useCheckIn } from '../lib/useCheckIn';
-
-interface Inspection {
-  id: string;
-  label: string;
-  kind: 'ai' | 'normal';
-}
-const INSPECTIONS: Inspection[] = [
-  { id: 'ai', label: 'AI inspection', kind: 'ai' },
-  { id: 'daily', label: 'Daily check', kind: 'normal' },
-  { id: 'preop', label: 'Pre-operation check', kind: 'normal' },
-];
+import { templatesForMachine } from '../lib/inspections';
 
 export default function CheckInSheet({
   machine,
   onClose,
+  onSelectInspection,
 }: {
   machine: FleetMachine | null;
   onClose: () => void;
+  onSelectInspection: (template: InspectionTemplate) => void;
 }) {
   const { checkInTo } = useCheckIn();
   const opened = !!machine;
   const [expanded, setExpanded] = useState(false);
+
+  const [templates, setTemplates] = useState<InspectionTemplate[] | null>(null); // null = loading
+  const [tplError, setTplError] = useState<string | null>(null);
 
   // Always start collapsed when a (new) asset opens the sheet.
   useEffect(() => {
     if (!opened) setExpanded(false);
   }, [opened, machine?.assetId]);
 
+  // Fetch the machine's assigned templates the first time the sheet expands.
+  useEffect(() => {
+    if (!expanded || !machine) return;
+    let cancelled = false;
+    setTemplates(null);
+    setTplError(null);
+    templatesForMachine(machine)
+      .then((t) => {
+        if (!cancelled) setTemplates(t);
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setTemplates([]);
+          setTplError((e as Error).message);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [expanded, machine?.assetId]);
+
   const doCheckIn = () => {
     if (!machine) return;
     checkInTo(machine);
     onClose();
   };
-
-  // 1st tap reveals the inspections; once expanded, "Check in" checks in.
-  const onPrimary = () => (expanded ? doCheckIn() : setExpanded(true));
 
   return (
     <Sheet
@@ -72,30 +86,48 @@ export default function CheckInSheet({
               </div>
             </div>
 
-            <button
-              type="button"
-              className="op-ci-btn op-ci-btn-fill op-ci-primary"
-              onClick={onPrimary}
-            >
-              Check in
-            </button>
-
-            {expanded && (
+            {!expanded ? (
+              <button
+                type="button"
+                className="op-ci-btn op-ci-btn-fill op-ci-primary"
+                onClick={() => setExpanded(true)}
+              >
+                Check in
+              </button>
+            ) : (
               <div className="op-ci-inspections">
                 <div className="op-ci-extra-title">Inspect before check-in</div>
-                {INSPECTIONS.map((i) => (
-                  <button
-                    key={i.id}
-                    type="button"
-                    className={`op-ci-insp${i.kind === 'ai' ? ' op-ci-insp-ai' : ''}`}
-                    onClick={doCheckIn}
-                  >
-                    <Icon f7={i.kind === 'ai' ? 'sparkles' : 'checkmark_shield'} />
-                    <span className="op-ci-insp-label">{i.label}</span>
-                    {i.kind === 'ai' && <span className="op-ci-ai-badge">AI</span>}
-                    <Icon f7="chevron_right" className="op-ci-insp-chev" />
-                  </button>
-                ))}
+
+                {templates === null ? (
+                  <div className="op-ci-tpl-loading">
+                    <Preloader size={22} />
+                    <span>Loading inspections…</span>
+                  </div>
+                ) : templates.length === 0 ? (
+                  <div className="op-ci-tpl-empty">
+                    {tplError
+                      ? 'Could not load inspections.'
+                      : 'No inspections assigned to this machine.'}
+                  </div>
+                ) : (
+                  templates.map((t) => {
+                    const ai = t.kind === 'intent';
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        className={`op-ci-insp${ai ? ' op-ci-insp-ai' : ''}`}
+                        onClick={() => onSelectInspection(t)}
+                      >
+                        <Icon f7={ai ? 'sparkles' : 'checkmark_shield'} />
+                        <span className="op-ci-insp-label">{t.name}</span>
+                        {ai && <span className="op-ci-ai-badge">AI</span>}
+                        <Icon f7="chevron_right" className="op-ci-insp-chev" />
+                      </button>
+                    );
+                  })
+                )}
+
                 <button
                   type="button"
                   className="op-ci-btn op-ci-btn-text op-ci-skip"

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionContext } from '@/lib/getSessionContext';
+import { resolveApiSession, ApiAuthError, corsHeaders, corsPreflight } from '@/lib/apiSession';
 import { getMachine } from '@/lib/machines';
 import { getSite } from '@/lib/sites';
 import { getTemplate } from '@/lib/inspections/repo';
@@ -17,11 +17,24 @@ interface Body {
   templateId: string;
 }
 
+export function OPTIONS(req: NextRequest) {
+  return corsPreflight(req);
+}
+
 export async function POST(req: NextRequest) {
-  const ctx = await getSessionContext();
+  const cors = corsHeaders(req.headers.get('origin'));
+  let ctx;
+  try {
+    ctx = await resolveApiSession(req);
+  } catch (e) {
+    if (e instanceof ApiAuthError) {
+      return NextResponse.json({ error: e.message }, { status: e.status, headers: cors });
+    }
+    throw e;
+  }
   const { machineId, templateId } = (await req.json()) as Body;
   if (!machineId || !templateId) {
-    return NextResponse.json({ error: 'machineId + templateId required' }, { status: 400 });
+    return NextResponse.json({ error: 'machineId + templateId required' }, { status: 400, headers: cors });
   }
 
   const [machine, template, lastRun] = await Promise.all([
@@ -29,8 +42,8 @@ export async function POST(req: NextRequest) {
     getTemplate(ctx.accountId, templateId),
     getLastCompletedRun(ctx.accountId, machineId, templateId),
   ]);
-  if (!machine) return NextResponse.json({ error: 'Machine not found' }, { status: 404 });
-  if (!template) return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+  if (!machine) return NextResponse.json({ error: 'Machine not found' }, { status: 404, headers: cors });
+  if (!template) return NextResponse.json({ error: 'Template not found' }, { status: 404, headers: cors });
 
   const site = machine.siteId ? await getSite(machine.siteId, ctx.accountId) : null;
   const inputs = buildPreflightInputs(machine, site?.name ?? null, lastRun, ctx.userId);
@@ -79,7 +92,7 @@ export async function POST(req: NextRequest) {
       reasoning: 'Pre-flight analysis was unavailable. Proceeding with default settings.',
       briefing: '',
     };
-    return NextResponse.json({ verdict, inputs });
+    return NextResponse.json({ verdict, inputs }, { headers: cors });
   }
 
   let verdict: PreflightVerdict;
@@ -104,5 +117,5 @@ export async function POST(req: NextRequest) {
     };
   }
 
-  return NextResponse.json({ verdict, inputs });
+  return NextResponse.json({ verdict, inputs }, { headers: cors });
 }

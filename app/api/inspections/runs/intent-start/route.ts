@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionContext } from '@/lib/getSessionContext';
+import { resolveApiSession, ApiAuthError, corsHeaders, corsPreflight } from '@/lib/apiSession';
 import { getMachine } from '@/lib/machines';
 import { getSite } from '@/lib/sites';
 import { getTemplate } from '@/lib/inspections/repo';
@@ -23,21 +23,34 @@ interface Body {
  *    3. Return { runId, preflightInputs } so the modal can hand the runner
  *       its server-side id AND surface the inputs in the admin debug panel.
  *  The intent AI itself sees the same inputs via /api/inspections/run-intent. */
+export function OPTIONS(req: NextRequest) {
+  return corsPreflight(req);
+}
+
 export async function POST(req: NextRequest) {
-  const ctx = await getSessionContext();
+  const cors = corsHeaders(req.headers.get('origin'));
+  let ctx;
+  try {
+    ctx = await resolveApiSession(req);
+  } catch (e) {
+    if (e instanceof ApiAuthError) {
+      return NextResponse.json({ error: e.message }, { status: e.status, headers: cors });
+    }
+    throw e;
+  }
   const { templateId, machineId } = (await req.json()) as Body;
   if (!templateId || !machineId) {
-    return NextResponse.json({ error: 'templateId, machineId required' }, { status: 400 });
+    return NextResponse.json({ error: 'templateId, machineId required' }, { status: 400, headers: cors });
   }
 
   const [machine, template] = await Promise.all([
     getMachine(machineId, ctx.accountId),
     getTemplate(ctx.accountId, templateId),
   ]);
-  if (!machine) return NextResponse.json({ error: 'Machine not found' }, { status: 404 });
-  if (!template) return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+  if (!machine) return NextResponse.json({ error: 'Machine not found' }, { status: 404, headers: cors });
+  if (!template) return NextResponse.json({ error: 'Template not found' }, { status: 404, headers: cors });
   if (template.kind !== 'intent' || !template.yaml_body) {
-    return NextResponse.json({ error: 'Not an intent template' }, { status: 400 });
+    return NextResponse.json({ error: 'Not an intent template' }, { status: 400, headers: cors });
   }
 
   const [lastRun, site] = await Promise.all([
@@ -67,5 +80,5 @@ export async function POST(req: NextRequest) {
     operatingHoursAtStart: snap?.insights.cumulativeOperatingHours ?? null,
   });
 
-  return NextResponse.json({ runId: id, preflightInputs });
+  return NextResponse.json({ runId: id, preflightInputs }, { headers: cors });
 }

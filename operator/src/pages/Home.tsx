@@ -16,6 +16,7 @@ import {
 import LeafletMap from '../components/LeafletMap';
 import MachineListItem from '../components/MachineListItem';
 import CheckInSheet from '../components/CheckInSheet';
+import InspectionPopup from '../components/InspectionPopup';
 import FilterSheet, {
   EMPTY_FILTERS,
   filtersActive,
@@ -25,6 +26,7 @@ import { fetchFleet } from '../data/machines';
 import { useGeolocation, haversineKm } from '../lib/geo';
 import { useCheckIn } from '../lib/useCheckIn';
 import type { Asset, FleetMachine } from '../types';
+import type { InspectionTemplate } from '../lib/inspectionTypes';
 
 type ViewMode = 'map' | 'list';
 
@@ -36,9 +38,10 @@ export default function Home() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  const [selectedInspection, setSelectedInspection] = useState<InspectionTemplate | null>(null);
 
   const geo = useGeolocation();
-  const { checkIn } = useCheckIn();
+  const { checkIn, checkInTo } = useCheckIn();
 
   useEffect(() => {
     let cancelled = false;
@@ -175,8 +178,20 @@ export default function Home() {
       />
 
       <CheckInSheet
-        machine={checkIn ? null : selectedMachine}
+        machine={checkIn || selectedInspection ? null : selectedMachine}
         onClose={() => setSelectedId(null)}
+        onSelectInspection={(t) => setSelectedInspection(t)}
+      />
+
+      <InspectionPopup
+        template={selectedInspection}
+        machine={selectedMachine}
+        onClose={() => setSelectedInspection(null)}
+        onComplete={() => {
+          if (selectedMachine) checkInTo(selectedMachine);
+          setSelectedInspection(null);
+          setSelectedId(null);
+        }}
       />
     </Page>
   );
