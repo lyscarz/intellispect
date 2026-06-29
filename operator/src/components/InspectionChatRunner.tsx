@@ -119,7 +119,21 @@ export default function InspectionChatRunner({
       {error && <div className="op-insp-error">{error}</div>}
 
       {!completed && (
-        <div className="op-chat-input">
+        <div
+          className="op-chat-input"
+          style={{
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            width: '100%',
+            boxSizing: 'border-box',
+            padding: '10px 12px',
+            paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 10px)',
+            borderTop: '1px solid rgba(120,120,128,0.18)',
+            background: 'var(--f7-bars-bg-color)',
+          }}
+        >
           <input
             type="text"
             value={input}
@@ -132,15 +146,48 @@ export default function InspectionChatRunner({
             }}
             placeholder="Reply…"
             disabled={streaming}
+            style={{
+              flex: '1 1 auto',
+              minWidth: 0,
+              width: '100%',
+              height: 44,
+              boxSizing: 'border-box',
+              WebkitAppearance: 'none',
+              appearance: 'none',
+              margin: 0,
+              padding: '0 16px',
+              borderRadius: 999,
+              border: '1px solid rgba(120,120,128,0.3)',
+              background: 'var(--f7-page-bg-color)',
+              color: 'var(--f7-text-color)',
+              fontSize: 16,
+              fontFamily: 'inherit',
+              outline: 'none',
+            }}
           />
           <button
             type="button"
-            className="op-chat-send"
             onClick={() => send(input)}
             disabled={streaming || !input.trim()}
             aria-label="Send"
+            style={{
+              flex: '0 0 auto',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 44,
+              height: 44,
+              padding: 0,
+              border: 'none',
+              background: 'transparent',
+              cursor: streaming || !input.trim() ? 'default' : 'pointer',
+              color:
+                streaming || !input.trim()
+                  ? 'var(--f7-text-color-secondary, #c7c7cc)'
+                  : 'var(--f7-theme-color)',
+            }}
           >
-            <Icon f7="arrow_up_circle_fill" />
+            <Icon f7="arrow_up_circle_fill" style={{ fontSize: 34 }} />
           </button>
         </div>
       )}
